@@ -85,6 +85,7 @@ aws lambda update-function-configuration `
         PC_MAC=00-11-22-33-44-55,
         FRIENDLY_NAME=Computador,
         SUSPEND_FRIENDLY_NAME=Suspensão do computador,
+        MUSIC_FRIENDLY_NAME=Música do computador,
         MQTT_HOST=SEU-CLUSTER.s1.eu.hivemq.cloud,
         MQTT_PORT=8883,
         MQTT_USERNAME=alexawol-lambda,

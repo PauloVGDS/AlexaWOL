@@ -46,27 +46,46 @@ def _computer_endpoint() -> dict:
     }
 
 
-def _suspend_endpoint() -> dict:
+def _scene_endpoint(endpoint_id: str, friendly_name: str, description: str) -> dict:
+    """Cena de ação única.
+
+    PowerController só comporta ligar e desligar, então cada ação extra do PC — suspender,
+    tocar música — vira uma cena própria. Uma ação nova aqui precisa de entrada
+    correspondente no mapa de `alexa/scene.py`.
+    """
     return {
-        "endpointId": config.SUSPEND_ENDPOINT_ID,
+        "endpointId": endpoint_id,
         "manufacturerName": "AlexaWOL",
-        "description": "Suspende o PC (AlexaWOL)",
-        "friendlyName": config.SUSPEND_FRIENDLY_NAME,
+        "description": description,
+        "friendlyName": friendly_name,
         "displayCategories": ["SCENE_TRIGGER"],
         "cookie": {},
         "capabilities": [
             _capability("Alexa"),
-            # supportsDeactivation=False: "desativar" uma suspensão não significa nada —
-            # para trazer o PC de volta existe o "ligue o computador".
+            # supportsDeactivation=False: "desativar" estas cenas não significa nada — para
+            # trazer o PC de volta existe o "ligar o computador".
             _capability("Alexa.SceneController", supportsDeactivation=False),
         ],
     }
 
 
 def handle(directive: dict) -> dict:
+    endpoints = [
+        _computer_endpoint(),
+        _scene_endpoint(
+            config.SUSPEND_ENDPOINT_ID,
+            config.SUSPEND_FRIENDLY_NAME,
+            "Suspende o PC (AlexaWOL)",
+        ),
+        _scene_endpoint(
+            config.MUSIC_ENDPOINT_ID,
+            config.MUSIC_FRIENDLY_NAME,
+            "Toca a mídia configurada no PC (AlexaWOL)",
+        ),
+    ]
     return {
         "event": {
             "header": header("Alexa.Discovery", "Discover.Response"),
-            "payload": {"endpoints": [_computer_endpoint(), _suspend_endpoint()]},
+            "payload": {"endpoints": endpoints},
         }
     }

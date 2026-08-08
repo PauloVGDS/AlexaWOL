@@ -27,6 +27,10 @@ ACTIONS = frozenset(
         "restart",  # params: {"delay": segundos}
         "abort",  # cancela shutdown/restart agendado
         "report",  # pede ao agente que republique o estado
+        # Sem params de propósito: o QUE tocar vem do config local do agente, nunca da
+        # rede. Se a mídia viesse no payload, quem tivesse o segredo HMAC faria o PC abrir
+        # qualquer coisa.
+        "play_music",
     }
 )
 

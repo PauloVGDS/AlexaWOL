@@ -16,6 +16,16 @@ state_topic = "alexawol/state"
 # Gere com:  python -c "import secrets; print(secrets.token_hex(32))"
 secret = "TROQUE-ME"
 
+[media]
+# O que a cena "Música do computador" abre. Fica só aqui, de propósito: o comando que chega
+# pela rede diz apenas "toque", nunca o que tocar.
+# Aceita qualquer coisa que o Windows saiba abrir:
+#   Faixa Spotify → "spotify:track:4cOdK2wGLETKBW3PvgPWqT"
+#   Playlist      → "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"
+#   YouTube       → "https://www.youtube.com/watch?v=..."
+#   Arquivo       → "C:\\Users\\<voce>\\Music\\musica.mp3"
+target = ""
+
 [power]
 # Segundos entre receber o comando e o desligamento efetivo. É a janela para dizer
 # "Alexa, cancelar" caso tenha sido engano.

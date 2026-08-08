@@ -25,7 +25,7 @@ import paho.mqtt.client as mqtt
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from shared.protocol import Rejected, prune_nonces, verify_command  # noqa: E402
 
-from actions import power, volume  # noqa: E402
+from actions import media, power, volume  # noqa: E402
 
 log = logging.getLogger("alexawol")
 
@@ -126,6 +126,8 @@ class Agent:
             power.suspend()
         elif action == "abort":
             power.abort()
+        elif action == "play_music":
+            media.play(self.cfg.get("media", {}).get("target", ""))
         elif action == "report":
             pass  # o publish_state do chamador já basta
         else:

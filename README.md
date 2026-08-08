@@ -54,7 +54,8 @@ bem mais simples.
 | `tools/wol_test.py` | Teste isolado de Wake-on-LAN, sem Alexa e sem nuvem |
 | `tools/send_cmd.py` | Publica comandos assinados à mão, para testar o agente |
 | `tests/test_lambda.py` | Exercita o handler sem AWS, sem broker e sem Alexa |
-| `docs/` | Guias de configuração do HiveMQ, da AWS e da skill |
+| `docs/setup-*.md` | Guias numerados de configuração do HiveMQ, da AWS e da skill |
+| `docs/tocar-musica.md` | Como a cena de música funciona e como ligá-la a uma rotina |
 
 ## Ordem de instalação
 
@@ -74,12 +75,18 @@ Siga nesta ordem — cada etapa valida a anterior e evita depurar três camadas 
 | "Alexa, ligar o computador" | `PowerController.TurnOn` | A Echo transmite o magic packet |
 | "Alexa, desligar o computador" | `PowerController.TurnOff` | Desliga (S5), com janela de cancelamento |
 | "Alexa, ativar suspensão do computador" | `SceneController.Activate` | Suspende (S3) |
+| "Alexa, ativar música do computador" | `SceneController.Activate` | Abre a mídia configurada no agente |
 | "Alexa, colocar o volume do computador em 30" | `Speaker.SetVolume` | Volume absoluto, 0–100 |
 | "Alexa, aumentar o volume do computador em 20" | `Speaker.AdjustVolume` | Ajuste relativo |
 | "Alexa, silenciar o computador" | `Speaker.SetMute` | Mudo |
 
-Suspender é um endpoint separado, exposto como cena, porque `PowerController` só tem dois
-estados e o "desligar" já ocupa um deles. Para frases mais curtas, crie Rotinas no app.
+Suspender e tocar música são endpoints separados, expostos como cenas, porque
+`PowerController` só tem dois estados e o "desligar" já ocupa um deles. Para frases mais
+curtas, crie Rotinas no app.
+
+A Alexa **não** consegue mandar o áudio dela para o PC — a cena de música faz o próprio PC
+abrir a mídia, e a Alexa serve só de gatilho. Detalhes em
+[docs/tocar-musica.md](docs/tocar-musica.md).
 
 ## Desenvolvimento e testes
 

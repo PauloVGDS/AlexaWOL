@@ -18,6 +18,11 @@ PC_MAC = os.environ["PC_MAC"]
 SUSPEND_ENDPOINT_ID = os.environ.get("SUSPEND_ENDPOINT_ID", "alexawol-pc-suspend")
 SUSPEND_FRIENDLY_NAME = os.environ.get("SUSPEND_FRIENDLY_NAME", "Suspensão do computador")
 
+# Terceira cena: manda o PC abrir a mídia configurada no agente. O que tocar não é decidido
+# aqui nem trafega pela rede — mora no config.toml do agente.
+MUSIC_ENDPOINT_ID = os.environ.get("MUSIC_ENDPOINT_ID", "alexawol-pc-music")
+MUSIC_FRIENDLY_NAME = os.environ.get("MUSIC_FRIENDLY_NAME", "Música do computador")
+
 # -- Alexa event gateway ---------------------------------------------------------------
 # pt-BR é servido por US East (N. Virginia), cujo gateway é o da América do Norte.
 # Europa/Índia: https://api.eu.amazonalexa.com/v3/events

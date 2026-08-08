@@ -98,7 +98,7 @@ def prop_value(result: dict, namespace: str, name: str):
 print("Discovery:")
 res = lambda_function.lambda_handler(directive("Alexa.Discovery", "Discover"), None)
 endpoints = res["event"]["payload"]["endpoints"]
-check("devolve 2 endpoints", len(endpoints) == 2, f"({len(endpoints)})")
+check("devolve 3 endpoints", len(endpoints) == 3, f"({len(endpoints)})")
 
 pc = endpoints[0]
 interfaces = {c["interface"]: c for c in pc["capabilities"]}
@@ -108,10 +108,11 @@ check("tem Speaker", "Alexa.Speaker" in interfaces)
 check("tem WakeOnLANController", "Alexa.WakeOnLANController" in interfaces)
 mac = interfaces.get("Alexa.WakeOnLANController", {}).get("configuration", {}).get("MACAddresses")
 check("MAC no formato com hifen", mac == ["00-11-22-33-44-55"], f"({mac})")
-check(
-    "segundo endpoint e cena",
-    "Alexa.SceneController" in {c["interface"] for c in endpoints[1]["capabilities"]},
-)
+for index, label in ((1, "suspender"), (2, "musica")):
+    check(
+        f"endpoint de {label} e cena",
+        "Alexa.SceneController" in {c["interface"] for c in endpoints[index]["capabilities"]},
+    )
 
 print("TurnOn (Wake-on-LAN):")
 wake_ups.clear()
@@ -155,13 +156,36 @@ res = lambda_function.lambda_handler(
 check("publicou set_mute", published == [("set_mute", {"muted": True})], f"({published})")
 check("responde muted True", prop_value(res, "Alexa.Speaker", "muted") is True)
 
-print("Cena de suspender:")
+print("Cenas:")
+# Cada cena precisa publicar a SUA ação. Enquanto existia só uma, o handler publicava
+# "suspend" incondicionalmente e passava — ativar a música suspenderia o PC.
 published.clear()
 res = lambda_function.lambda_handler(
     directive("Alexa.SceneController", "Activate", endpoint="alexawol-pc-suspend"), None
 )
-check("publicou suspend", published == [("suspend", {})], f"({published})")
+check("suspender publica suspend", published == [("suspend", {})], f"({published})")
 check("responde ActivationStarted", res["event"]["header"]["name"] == "ActivationStarted")
+
+published.clear()
+res = lambda_function.lambda_handler(
+    directive("Alexa.SceneController", "Activate", endpoint="alexawol-pc-music"), None
+)
+check("musica publica play_music", published == [("play_music", {})], f"({published})")
+check("responde ActivationStarted", res["event"]["header"]["name"] == "ActivationStarted")
+check(
+    "endpointId ecoado corretamente",
+    res["event"]["endpoint"]["endpointId"] == "alexawol-pc-music",
+)
+
+published.clear()
+res = lambda_function.lambda_handler(
+    directive("Alexa.SceneController", "Activate", endpoint="cena-inexistente"), None
+)
+check("cena desconhecida nao publica nada", published == [], f"({published})")
+check(
+    "cena desconhecida devolve NO_SUCH_ENDPOINT",
+    res["event"]["payload"]["type"] == "NO_SUCH_ENDPOINT",
+)
 
 print("ReportState:")
 res = lambda_function.lambda_handler(directive("Alexa", "ReportState", endpoint="alexawol-pc"), None)

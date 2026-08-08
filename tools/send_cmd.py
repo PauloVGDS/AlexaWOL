@@ -9,6 +9,7 @@ de existir qualquer Lambda.
     python send_cmd.py suspend
     python send_cmd.py shutdown --delay 30
     python send_cmd.py abort
+    python send_cmd.py play_music
 
 Também serve para o teste negativo de segurança:
 
@@ -76,6 +77,7 @@ def main() -> None:
             "suspend",
             "abort",
             "report",
+            "play_music",
         ],
     )
     parser.add_argument("--percent", type=int, default=30)

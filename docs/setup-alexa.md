@@ -56,7 +56,7 @@ uma, o vínculo falha exatamente no aplicativo que usa aquela região.
    porque é o token que autoriza o envio do evento `WakeUp`.
 3. **Descobrir dispositivos**
 
-Devem aparecer dois: **Computador** e **Suspensão do computador**.
+Devem aparecer três: **Computador**, **Suspensão do computador** e **Música do computador**.
 
 Confirme que o token foi salvo:
 
@@ -72,6 +72,7 @@ aws ssm get-parameter --name /alexawol/refresh_token --with-decryption `
 | "Alexa, ligar o computador" | A Echo transmite o magic packet na rede local |
 | "Alexa, desligar o computador" | Desliga (S5), com janela de cancelamento |
 | "Alexa, ativar suspensão do computador" | Suspende (S3) |
+| "Alexa, ativar música do computador" | Abre a mídia configurada — ver [tocar-musica.md](tocar-musica.md) |
 | "Alexa, colocar o volume do computador em 30" | Volume absoluto |
 | "Alexa, aumentar o volume do computador em 20" | Ajuste relativo |
 | "Alexa, silenciar o computador" | Mudo |

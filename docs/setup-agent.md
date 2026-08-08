@@ -14,6 +14,10 @@ Copy-Item agent\config.example.toml agent\config.toml
 Edite `agent\config.toml` com o hostname do HiveMQ, as credenciais do usuário
 **`alexawol-agent`** e o segredo HMAC. O arquivo está no `.gitignore`.
 
+A seção `[media]` é opcional — só é usada pela cena "Música do computador". Se você não for
+usá-la, deixe `target = ""`; o comando simplesmente falha com mensagem clara no log, sem
+derrubar o agente. Ver [tocar-musica.md](tocar-musica.md).
+
 ## Testar antes de instalar como serviço
 
 Rode em primeiro plano, num terminal:
@@ -31,6 +35,7 @@ python tools\send_cmd.py adjust_volume --delta 10
 python tools\send_cmd.py set_mute --muted true
 python tools\send_cmd.py set_mute --muted false
 python tools\send_cmd.py report
+python tools\send_cmd.py play_music   # só se você preencheu [media].target
 ```
 
 Confira que o volume do Windows realmente mudou a cada comando.

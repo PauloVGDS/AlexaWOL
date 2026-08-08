@@ -101,10 +101,27 @@ em `alexawol/state` e configura um LWT com `online: false`. É assim que a Alexa
 está ligado sem ninguém fazer polling. Ausência de retained significa "agente nunca conectou"
 → PC desligado.
 
-**Dois endpoints no Discovery.** `PowerController` só tem ligar/desligar, e o usuário quer
-suspender e desligar separados. Por isso existe um segundo endpoint exposto como
-`SceneController` ("Suspensão do computador"). Adicionar uma terceira ação de energia significa
-mais um endpoint-cena.
+**Cenas para o que não cabe em ligar/desligar.** `PowerController` só tem dois estados e o
+"desligar" já ocupa um deles, então cada ação extra vira um endpoint `SceneController` próprio
+— hoje "Suspensão do computador" e "Música do computador".
+
+Acrescentar uma cena exige **quatro** mudanças coordenadas, e esquecer qualquer uma produz
+falha silenciosa:
+
+1. a ação na allowlist de `shared/protocol.py`;
+2. o ramo no `dispatch()` do agente;
+3. o endpoint em `discovery.py`;
+4. **a entrada em `_ACTION_BY_ENDPOINT` de `alexa/scene.py`.**
+
+O item 4 é o mais fácil de esquecer e o mais perigoso. Antes de existir a segunda cena, o
+`scene.py` publicava `suspend` incondicionalmente e passava nos testes — quando a cena de
+música entrou, ativá-la teria suspendido o PC. `tests/test_lambda.py` agora cobre isso
+verificando que cada cena publica a **sua** ação, e que endpoint desconhecido devolve
+`NO_SUCH_ENDPOINT` em vez de cair num padrão.
+
+**A mídia da cena de música nunca trafega pela rede.** O comando é só o verbo `play_music`; o
+alvo vem de `[media].target` no `config.toml` do agente. Não mova isso para o payload — quem
+tivesse o segredo HMAC faria o PC abrir qualquer programa.
 
 ### Segurança
 
