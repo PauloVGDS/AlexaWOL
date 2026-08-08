@@ -1,0 +1,25 @@
+# Copie para config.toml e preencha. config.toml está no .gitignore — ele guarda segredos.
+
+[mqtt]
+# Hostname do cluster HiveMQ, sem esquema. Ex.: "abc123....s1.eu.hivemq.cloud"
+host = "SEU-CLUSTER.s1.eu.hivemq.cloud"
+port = 8883
+# Credencial COM PERMISSÃO DE ASSINAR apenas. O Lambda usa outra, só de publicar.
+username = "alexawol-agent"
+password = "TROQUE-ME"
+client_id = "alexawol-agent"
+cmd_topic = "alexawol/cmd"
+state_topic = "alexawol/state"
+
+[security]
+# Segredo compartilhado com o Lambda. Precisa ser idêntico dos dois lados.
+# Gere com:  python -c "import secrets; print(secrets.token_hex(32))"
+secret = "TROQUE-ME"
+
+[power]
+# Segundos entre receber o comando e o desligamento efetivo. É a janela para dizer
+# "Alexa, cancelar" caso tenha sido engano.
+shutdown_delay = 20
+# true adiciona /f ao shutdown: fecha aplicativos à força. Mais confiável, porém pode
+# descartar trabalho não salvo.
+force = false

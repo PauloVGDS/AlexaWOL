@@ -1,0 +1,14 @@
+# Segredos
+agent/config.toml
+lambda/.env
+*.pem
+
+# Build do Lambda
+lambda/build/
+lambda/*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/

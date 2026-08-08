@@ -1,0 +1,5 @@
+paho-mqtt>=2.1.0
+# 20251023+ expõe AudioDevice.EndpointVolume; versões anteriores usavam Activate(), que
+# não existe mais.
+pycaw>=20251023
+comtypes>=1.4.0
