@@ -30,10 +30,21 @@ powercfg /devicequery wake_armed
 `HiberbootEnabled` precisa ser `0`. O Fast Startup é a causa mais comum de "o WOL funciona
 quando suspendo, mas não quando desligo".
 
-## O teste
+## Como enviar o magic packet
 
-Copie `tools/wol_test.py` para **outro dispositivo da mesma rede** — um notebook, ou o celular
-com Termux. Ele não tem dependências, só a biblioteca padrão do Python.
+O pacote precisa sair de **outro dispositivo da mesma rede** — o PC alvo obviamente não pode
+acordar a si mesmo. Três caminhos, do mais fácil ao mais trabalhoso:
+
+**Pelo roteador.** Boa parte da linha Archer da TP-Link tem Wake-on-LAN embutido, em
+**Avançado → Rede → Wake-on-LAN**. Entre em <http://192.168.1.1> e procure. Não instala nada
+e é o caminho mais rápido — vale olhar antes de qualquer outra coisa.
+
+**Pelo celular.** Qualquer app gratuito de "Wake on LAN" na Play Store ou App Store. Preencha
+o MAC `00-11-22-33-44-55` e o broadcast `192.168.1.255`. O celular precisa estar no Wi-Fi da
+casa, não em dados móveis.
+
+**Por outro computador.** Copie `tools/wol_test.py` para lá. Ele não tem dependências, só a
+biblioteca padrão do Python.
 
 ### Do estado suspenso (S3)
 
@@ -70,6 +81,23 @@ O `ErP Ready` é o culpado mais frequente e o menos óbvio, porque o nome não m
 Verifique se o outro dispositivo está mesmo na sub-rede `192.168.1.0/24` e se o roteador não
 tem isolamento de clientes ("AP isolation") ativo na rede Wi-Fi — ele bloqueia broadcast entre
 Wi-Fi e cabo. É o mesmo requisito que a Echo precisará cumprir depois.
+
+## Por que vale gastar esses dois minutos
+
+Sem este teste, se o "Alexa, ligar o computador" falhar depois, você não sabe se o problema é
+BIOS, placa de rede, a Echo, o token do account linking ou o event gateway. São cinco
+suspeitos. Com o teste feito, sobra um.
+
+Se você preferir ir direto ao teste com a voz, dá para isolar pelo log — o `events.py` registra
+a resposta do gateway:
+
+```powershell
+aws logs tail /aws/lambda/alexawol --follow --region us-east-1
+```
+
+`event gateway respondeu 202` significa que o lado da Alexa fez tudo certo e a Echo recebeu
+ordem de transmitir; se mesmo assim o PC não acordar, o problema é local e na prática é BIOS.
+Sem o 202, é token ou configuração. Sem invocação nenhuma no log, é a permissão do Lambda.
 
 ## Próximo passo
 
