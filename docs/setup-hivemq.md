@@ -26,6 +26,12 @@ vazar, ela não consegue nem ler o estado do seu PC, muito menos escutar comando
 O Lambda precisa assinar `alexawol/state` porque é assim que ele descobre se o PC está ligado
 e qual o volume atual, na hora do `ReportState`.
 
+⚠️ **Use senhas diferentes para os dois usuários.** A ACL do HiveMQ é por usuário, então
+repetir a senha não quebra nada no broker — mas destrói a única propriedade que justifica ter
+duas credenciais. Os nomes de usuário são previsíveis; com a mesma senha, quem obtiver a
+credencial do agente obtém junto a de publicar comandos, que é exatamente o que a separação
+existe para impedir.
+
 ### Como o script de teste publica
 
 `tools/send_cmd.py` faz o papel do Lambda, então precisa **publicar** em `alexawol/cmd` — coisa

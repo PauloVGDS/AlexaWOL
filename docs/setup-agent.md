@@ -67,9 +67,13 @@ python tools\send_cmd.py abort        # cancela — teste este primeiro!
 python tools\send_cmd.py suspend
 ```
 
-**Sobre suspender:** com a hibernação habilitada, o Windows pode hibernar (S4) em vez de
-suspender (S3). Na prática o Wake-on-LAN funciona nos dois estados desde que a placa esteja
-armada. Se você quiser garantir o S3, rode `powercfg -h off` — ao custo de perder a hibernação.
+**Sobre suspender:** circula a ressalva de que, com a hibernação habilitada, o Windows
+hibernaria (S4) em vez de suspender (S3). **Medido nesta máquina: não acontece.** O suspender
+entrou em S3 de verdade com a hibernação ativa, então **não** é preciso `powercfg -h off` e
+você continua com a hibernação disponível.
+
+O comportamento depende de firmware e drivers, então vale remedir ao trocar de máquina. De
+todo modo o WOL funciona nos dois estados desde que a placa esteja armada.
 
 Confira o que aconteceu de fato:
 
@@ -80,6 +84,22 @@ Get-WinEvent -LogName System -MaxEvents 20 |
 ```
 
 O evento 42 é a entrada em suspensão e o 107 é a saída.
+
+## Ao terminar os testes: esvazie o `[publisher]`
+
+```toml
+[publisher]
+username = ""
+password = ""
+```
+
+Enquanto ela está preenchida, o `config.toml` guarda **as duas** credenciais — inclusive a que
+publica comandos, justamente a que o desenho quer manter longe do PC. Junte a isso o segredo
+HMAC, que também mora nesse arquivo, e um `config.toml` vazado dá controle total da máquina.
+
+O agente ignora a seção, então esvaziá-la não afeta a operação. A partir da camada 3 quem
+publica é o Lambda de verdade, com a credencial nas variáveis de ambiente dele. Rotacionar a
+senha do `alexawol-lambda` nesse momento fecha o ciclo.
 
 ## Instalar como Tarefa Agendada
 

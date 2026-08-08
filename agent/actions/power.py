@@ -46,8 +46,11 @@ def suspend() -> None:
     que importa aqui: precisa ser 0, senão o Windows desarma os eventos de wake e o
     Wake-on-LAN não traz a máquina de volta.
 
-    Ressalva conhecida: com a hibernação habilitada, o Windows pode hibernar (S4) em vez de
-    suspender. Na prática o WOL funciona igual nos dois estados, desde que a placa de rede
-    esteja armada. Se você quiser garantir S3, rode `powercfg -h off`.
+    Circula a ressalva de que, com a hibernação habilitada, o Windows hibernaria (S4) em vez
+    de suspender. **Medido nesta máquina: não acontece** — o par de eventos 42/107 do log do
+    sistema confirma S3 com a hibernação ativa. Não é preciso `powercfg -h off`.
+
+    O comportamento depende de firmware e drivers, então vale remedir ao trocar de máquina.
+    De todo modo o WOL funciona nos dois estados desde que a placa de rede esteja armada.
     """
     ctypes.windll.powrprof.SetSuspendState(0, 1, 0)
