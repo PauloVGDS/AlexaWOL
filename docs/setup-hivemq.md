@@ -26,6 +26,27 @@ vazar, ela não consegue nem ler o estado do seu PC, muito menos escutar comando
 O Lambda precisa assinar `alexawol/state` porque é assim que ele descobre se o PC está ligado
 e qual o volume atual, na hora do `ReportState`.
 
+### Como o script de teste publica
+
+`tools/send_cmd.py` faz o papel do Lambda, então precisa **publicar** em `alexawol/cmd` — coisa
+que a credencial do agente não pode fazer pela tabela acima, e com razão.
+
+A solução não é afrouxar a ACL do agente. Preencha a seção `[publisher]` do `config.toml` com a
+credencial do **Lambda**, que já tem essa permissão de direito:
+
+```toml
+[publisher]
+username = "alexawol-lambda"
+password = "a senha do alexawol-lambda"
+```
+
+O agente ignora essa seção; ela existe só para o script de teste. Assim a ACL permanece correta
+o tempo todo e não há permissão temporária para lembrar de remover depois.
+
+Se você esquecer de preencher, o `send_cmd.py` avisa no terminal — sem ele o sintoma seria
+traiçoeiro, porque o script publicaria "com sucesso" e o agente nunca receberia nada: a
+rejeição acontece no broker, não no código.
+
 Guarde as duas senhas — você vai precisar delas no `config.toml` do agente e nas variáveis de
 ambiente do Lambda.
 

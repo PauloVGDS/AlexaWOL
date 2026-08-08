@@ -20,6 +20,11 @@ derrubar o agente. Ver [tocar-musica.md](tocar-musica.md).
 
 ## Testar antes de instalar como serviço
 
+Antes: preencha `[publisher]` no `config.toml` com a credencial do **Lambda**
+(`alexawol-lambda`). O `send_cmd.py` faz o papel do Lambda e precisa publicar em
+`alexawol/cmd`, o que a credencial do agente não pode — ver
+[setup-hivemq.md](setup-hivemq.md).
+
 Rode em primeiro plano, num terminal:
 
 ```powershell

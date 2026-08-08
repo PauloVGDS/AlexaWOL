@@ -11,6 +11,15 @@ client_id = "alexawol-agent"
 cmd_topic = "alexawol/cmd"
 state_topic = "alexawol/state"
 
+[publisher]
+# Opcional, usado SÓ por tools/send_cmd.py, que faz o papel do Lambda nos testes.
+# Preencha com a credencial do Lambda (alexawol-lambda), que já tem permissão de publicar
+# em alexawol/cmd. Assim você testa sem afrouxar a ACL do agente — que, corretamente, só
+# pode assinar comandos, nunca emiti-los.
+# O agente ignora esta seção.
+username = ""
+password = ""
+
 [security]
 # Segredo compartilhado com o Lambda. Precisa ser idêntico dos dois lados.
 # Gere com:  python -c "import secrets; print(secrets.token_hex(32))"

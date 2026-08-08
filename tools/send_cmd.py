@@ -96,8 +96,23 @@ def main() -> None:
     if args.tamper or args.stale:
         message = corrupt(message, args.tamper, args.stale, secret)
 
+    # Este script faz o papel do Lambda, então precisa PUBLICAR em alexawol/cmd — coisa que
+    # a credencial do agente não pode fazer pela ACL, e com razão. Use a do Lambda em
+    # [publisher]. Sem ela, cai na do agente e o broker rejeita a publicação em silêncio.
+    pub = cfg.get("publisher") or {}
+    username = pub.get("username") or mq["username"]
+    password = pub.get("password") or mq["password"]
+    if not pub.get("username"):
+        print(
+            "aviso: [publisher] não configurado, usando a credencial do agente.\n"
+            "       Se a ACL do broker estiver correta, a publicação será recusada e o\n"
+            "       agente não receberá nada. Preencha [publisher] com a credencial do\n"
+            "       Lambda (alexawol-lambda).",
+            file=sys.stderr,
+        )
+
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="alexawol-testcli")
-    client.username_pw_set(mq["username"], mq["password"])
+    client.username_pw_set(username, password)
     client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLSv1_2)
     client.connect(mq["host"], int(mq["port"]), keepalive=30)
     client.loop_start()
