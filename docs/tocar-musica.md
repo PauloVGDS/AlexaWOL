@@ -60,6 +60,16 @@ No app: botão direito na faixa ou playlist → **Compartilhar** → **Copiar li
 Vale a conversão: o formato `spotify:` abre o **app desktop**, enquanto o `https://` abre o
 navegador e costuma parar numa página de login.
 
+### Spotify instalado pela Microsoft Store
+
+Validado nesta máquina: **funciona, e sem precisar do fallback.** Vale registrar porque a
+suspeita era razoável — apps da Store não registram o protocolo na chave clássica
+`shell\open\command`, e sim pelo mecanismo de ativação AppX. Mas `HKCU:\SOFTWARE\Classes\spotify`
+carrega o valor `URL Protocol`, que é exatamente o que o ShellExecute procura, então o
+`os.startfile` resolve sozinho.
+
+O fallback para `cmd /c start` continua no código para os casos em que isso não vale.
+
 ## Testar
 
 Sem envolver a Alexa, com o agente rodando:
