@@ -110,9 +110,6 @@ $vars = @'
 {
   "Variables": {
     "PC_MAC": "00-11-22-33-44-55",
-    "FRIENDLY_NAME": "Computador",
-    "SUSPEND_FRIENDLY_NAME": "Suspensão do computador",
-    "MUSIC_FRIENDLY_NAME": "Música do computador",
     "MQTT_HOST": "SEU-CLUSTER.s1.eu.hivemq.cloud",
     "MQTT_PORT": "8883",
     "MQTT_USERNAME": "alexawol-lambda",
@@ -134,12 +131,27 @@ aws lambda update-function-configuration `
 Remove-Item env.json   # contém segredos; não deixe na pasta
 ```
 
+**Os nomes dos dispositivos não estão aqui de propósito.** `FRIENDLY_NAME`,
+`SUSPEND_FRIENDLY_NAME` e `MUSIC_FRIENDLY_NAME` já têm os valores certos como padrão em
+`lambda/config.py` — "Computador", "Suspensão do computador" e "Música do computador". O código
+vai para o zip em UTF-8 e chega íntegro; passar os mesmos valores por variável de ambiente só
+adicionaria um caminho onde o acento pode se perder, sem ganho nenhum.
+
+Esse risco é concreto: numa tentativa anterior o `MUSIC_FRIENDLY_NAME` chegou à AWS como
+`Msica do computador`, com o "ú" comido pela code page do console. Nada quebraria tecnicamente,
+mas esse é o nome que aparece no app — e você teria que dizer "Alexa, ativar Msica do
+computador" para funcionar.
+
+Só defina essas variáveis se quiser nomes **diferentes** dos padrões. Se o nome tiver acento,
+monte pelo codepoint para contornar a code page: `"M" + [char]0x00FA + "sica do computador"`.
+Depois confira o que a AWS realmente guardou.
+
 **Por que a escrita é assim e não `Out-File -Encoding utf8`.** No Windows PowerShell 5.1,
 `-Encoding utf8` grava um BOM (`EF BB BF`) no começo do arquivo, e a AWS CLI rejeita o JSON com
 `Unexpected UTF-8 BOM`. No PowerShell 7 o mesmo comando grava sem BOM, então o erro só aparece
 para quem roda no 5.1 — e ambos costumam estar instalados na mesma máquina, o que torna a falha
 intermitente conforme o terminal usado. O `UTF8Encoding $false` se comporta igual nas duas
-versões. O UTF-8 em si é necessário por causa dos acentos em "Suspensão" e "Música".
+versões.
 
 **Cole os valores do LWA por inteiro.** O `LWA_CLIENT_SECRET` vem no formato
 `amzn1.oa2-cs.v1.` seguido de uma string hexadecimal — o prefixo faz parte do segredo, não é
