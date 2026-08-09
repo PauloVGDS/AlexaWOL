@@ -232,6 +232,7 @@ e a leitura correspondente no agente: sobra 0,06% de um núcleo.
 | `tools/medir_agente.py` | Mede CPU e memória do agente, separando os subprocessos |
 | `tools/send_cmd.py` | Publica comandos assinados à mão, para testar o agente |
 | `tests/test_lambda.py` | Exercita o handler sem AWS, sem broker e sem Alexa |
+| `tests/test_consistencia.py` | Pega listas espelhadas que saíram de sincronia |
 | `docs/` | Guias de instalação, diagnóstico e extensão |
 
 ## Desenvolvimento e testes

@@ -10,6 +10,10 @@ O código, os comentários e a documentação deste repositório são em portugu
 # Testes do handler do Lambda — não precisa de AWS, broker nem Alexa
 python tests\test_lambda.py
 
+# Confere as listas espelhadas: allowlist x dispatch, métricas x campos publicados,
+# dependências x verificador. Nenhuma dessas quebras aparece em teste funcional.
+python tests\test_consistencia.py
+
 # Teste isolado de Wake-on-LAN — rode de OUTRO dispositivo da rede
 python tools\wol_test.py 00-11-22-33-44-55
 

@@ -131,6 +131,7 @@ pronunciáveis porque também são alvos de voz.
 ```powershell
 # 1. Testes locais — sem AWS, sem broker, sem Alexa
 python tests\test_lambda.py
+python tests\test_consistencia.py
 
 # 2. Lambda
 powershell -ExecutionPolicy Bypass -File lambda\build.ps1 -Deploy
@@ -158,6 +159,7 @@ Testar cada camada isolada é o que transforma "não funcionou" em um suspeito s
 | Camada | Como | Prova o quê |
 |---|---|---|
 | 1 | `python tests\test_lambda.py` | O handler monta o JSON certo |
+| 1b | `python tests\test_consistencia.py` | As listas espelhadas continuam em sincronia |
 | 2 | `python tools\send_cmd.py <acao>` | Broker, HMAC, agente e a ação no Windows |
 | 3 | `aws lambda invoke` com uma diretiva | O Lambda publicado, sem depender da voz |
 | 4 | Falar com a Alexa | Reconhecimento e roteamento da frase |
@@ -174,6 +176,7 @@ Quando falhar, o log do Lambda separa os mundos:
 
 ```powershell
 python tests\test_lambda.py
+python tests\test_consistencia.py
 git status          # config.toml nao pode aparecer
 ```
 
