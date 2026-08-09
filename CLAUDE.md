@@ -134,6 +134,35 @@ O `HMAC_SECRET` do Lambda e o `secret` do `agent/config.toml` precisam ser idên
 credenciais MQTT são duas e diferentes: `alexawol-lambda` (publica em `cmd`, assina `state`) e
 `alexawol-agent` (assina `cmd`, publica `state`).
 
+### Credenciais: centralizadas em um arquivo, nunca no repositório
+
+**Decisão:** todos os segredos do lado do PC ficam num único arquivo, `agent/config.toml` —
+credencial do agente, credencial do publisher, segredo HMAC e o alvo de mídia. Não são
+espalhados por variáveis de ambiente, arquivos `.env` separados ou cofre externo.
+
+O motivo é operacional: um arquivo só significa um lugar para editar ao rotacionar uma senha,
+um lugar para conferir quando algo para de autenticar, e uma única entrada no `.gitignore`
+para proteger. Segredo espalhado é segredo que vaza pela cópia esquecida.
+
+**Consequências que precisam ser respeitadas:**
+
+- `agent/config.toml` **nunca** é commitado. Já está no `.gitignore`; ao mexer nesse arquivo,
+  confirme com `git status` que ele não aparece. Versionado é `config.example.toml`, e nele
+  todo valor sensível fica como `""` ou `TROQUE-ME`.
+- **Nunca imprima o conteúdo desses campos** em resposta, log ou mensagem de commit. Para
+  validar a configuração, verifique presença, tamanho e formato — não o valor. Comparar duas
+  senhas se faz por hash, não exibindo as duas.
+- O `[publisher]` concentra a credencial do Lambda no PC, além da do agente. É consciente: sem
+  ela, `tools/send_cmd.py` não consegue publicar em `alexawol/cmd` e a alternativa seria
+  afrouxar a ACL do agente permanentemente — o que quebraria a separação entre quem emite
+  comandos e quem os executa. Um arquivo protegido é melhor do que uma ACL errada.
+- Como consequência do ponto acima, quem obtém o `config.toml` obtém tudo: as duas credenciais
+  MQTT e o segredo HMAC. É o modelo de ameaça aceito — a proteção é o arquivo não sair da
+  máquina, não a compartimentação interna dele.
+- O lado do Lambda espelha isso em variáveis de ambiente da função, criptografadas em repouso.
+  A única exceção é o refresh token do account linking, que fica no SSM Parameter Store como
+  SecureString por ser escrito em tempo de execução, quando chega o `AcceptGrant`.
+
 ## Ambiente alvo
 
 Valores concretos desta instalação, referenciados pelos docs e pelos testes:
