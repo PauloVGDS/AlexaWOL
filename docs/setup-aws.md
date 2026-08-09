@@ -172,20 +172,60 @@ aws lambda get-function-configuration --function-name alexawol --region us-east-
 ## 4.4 Autorizar a Alexa a invocar
 
 Só dá para fazer depois de criar a skill, porque exige o ID dela. Volte aqui no fim do
-passo 5.1:
+passo 5.1.
+
+**Pegue o Skill ID real primeiro.** No Alexa Developer Console, na lista de skills, há um link
+**View Skill ID** abaixo do nome; ele também aparece na URL. O formato é `amzn1.ask.skill.`
+seguido de um **UUID com hífens**:
+
+```
+amzn1.ask.skill.a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+Se o que você copiou não tiver hífens, não é o Skill ID.
 
 ```powershell
+$skillId = 'amzn1.ask.skill.COLE-O-SEU-AQUI'
+
 aws lambda add-permission `
     --function-name alexawol `
     --statement-id alexa-smarthome `
     --action lambda:InvokeFunction `
     --principal alexa-connectedhome.amazon.com `
-    --event-source-token amzn1.ask.skill.SEU-SKILL-ID `
+    --event-source-token $skillId `
     --region us-east-1
 ```
 
-Sem isso a Alexa recebe `AccessDeniedException` e o app mostra "não foi possível encontrar
-dispositivos".
+Confira o que ficou gravado — vale os cinco segundos:
+
+```powershell
+aws lambda get-policy --function-name alexawol --region us-east-1 `
+    --query 'Policy' --output text | ConvertFrom-Json |
+    Select-Object -ExpandProperty Statement |
+    Select-Object Sid, @{n='Token';e={$_.Condition.StringEquals.'lambda:EventSourceToken'}}
+```
+
+### ⚠️ O erro que o placeholder provoca
+
+Se você rodar o comando com o texto do placeholder em vez do ID real, a permissão é criada e o
+comando **retorna sucesso** — mas ela não vale para skill nenhuma. E o sintoma aparece longe
+dali: ao salvar o endpoint no console da Alexa, surge uma mensagem sobre **"event source
+type"**, que não menciona token nem permissão.
+
+A explicação: ao salvar o endpoint, o console consulta a política do Lambda e procura uma
+permissão para `alexa-connectedhome.amazon.com` **com o Skill ID daquela skill**. Com o token
+errado a verificação falha, e a Amazon reporta o erro de um jeito que despista.
+
+Para corrigir, remova pelo `--statement-id` (não pelo conteúdo) e refaça:
+
+```powershell
+aws lambda remove-permission --function-name alexawol `
+    --statement-id alexa-smarthome --region us-east-1
+```
+
+Sem a permissão correta, a Alexa recebe `AccessDeniedException`, o app mostra "não foi possível
+encontrar dispositivos" e **o log group nem chega a existir** — porque o log só é criado na
+primeira invocação, e ela nunca acontece.
 
 ## Atualizar depois de mexer no código
 
