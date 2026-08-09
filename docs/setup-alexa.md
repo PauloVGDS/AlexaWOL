@@ -70,6 +70,38 @@ aleatório, funcionando num lugar e não em outro. Cole as três de uma vez.
 Depois de salvar, espere um ou dois minutos antes de tentar de novo — a alteração no LWA não
 propaga instantaneamente.
 
+#### Se o erro persistir com as três URLs cadastradas
+
+Repare no sufixo: `bad-redirect-uri-`**`vendor`**. Ele não diz apenas "URL não cadastrada" — diz
+que o *vendor* da URL não corresponde ao vendor associado ao `client_id`. Isso aponta para uma
+causa diferente, e a mais provável é **o Security Profile estar numa conta Amazon diferente da
+que é dona da skill**. O vendor ID embutido nas Redirect URLs é o da conta da skill; se o perfil
+LWA nasceu em outra conta, nenhuma URL cadastrada nele vai bater.
+
+Confira o e-mail logado nos dois consoles, em abas separadas:
+
+- <https://developer.amazon.com/alexa/console/ask> — onde está a skill
+- <https://developer.amazon.com/loginwithamazon/console/site/lwa/overview.html> — onde está o perfil
+
+Se forem contas diferentes, recrie o Security Profile na conta certa e troque o
+`client_id`/`secret` em **dois** lugares: no Account Linking da skill e nas variáveis de
+ambiente do Lambda.
+
+Se forem a mesma conta, verifique nesta ordem:
+
+1. **É o perfil certo?** Havendo mais de um Security Profile, o que importa é aquele cujo
+   Client ID bate com o `LWA_CLIENT_ID` da função. Abra Web Settings e confira o Client ID antes
+   de olhar as URLs.
+2. **É o campo certo?** **Allowed Return URLs** é o que vale. **Allowed Origins** fica logo ao
+   lado, não serve para este fluxo e é fácil confundir.
+3. **Persistiu?** Recarregue a página e veja se as três continuam lá. O LWA às vezes aceita o
+   clique em Save sem gravar quando falta algum campo obrigatório do perfil — a Privacy Notice
+   URL em especial.
+
+Não vale tentar diagnosticar isso disparando requisições ao endpoint OAuth por script: a Amazon
+recusa requisição que não vem de navegador, devolvendo 400 tanto para configuração certa quanto
+errada. O teste não distingue nada e só parece sondagem.
+
 ## 5.4 Habilitar e descobrir
 
 1. No app Alexa: **Mais → Skills e Jogos → Suas Skills → Modo de Desenvolvedor** → `AlexaWOL`
