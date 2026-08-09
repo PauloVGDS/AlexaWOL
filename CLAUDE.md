@@ -79,6 +79,14 @@ sessão 0 — um serviço SYSTEM não consegue ler nem escrever o volume. Por is
 com a propriedade `EndpointVolume`. O padrão antigo `speakers.Activate(IAudioEndpointVolume...)`
 que aparece em quase todo tutorial na internet **não funciona mais**.
 
+**`LWA_CLIENT_ID`/`LWA_CLIENT_SECRET` são os de "Alexa Skill Messaging".** Não são os do
+Security Profile usado no account linking, apesar do nome da variável sugerir isso. Ficam em
+Build → Permissions no console da skill, atrás do botão SHOW, e só existem depois de ligar o
+toggle **Send Alexa Events** — que também é o que faz a Alexa enviar o `AcceptGrant`. Os dois
+pares têm formato idêntico, então a troca não produz erro em lugar nenhum: a falha aparece só
+no `TurnOn`, o único caminho que usa esses valores. Se alguém "corrigir" isso para as
+credenciais do account linking, o "ligar" para de funcionar sem nenhum sintoma em outro lugar.
+
 **Nada de `DeferredResponse`.** A doc da Amazon descreve o "ligar" como DeferredResponse →
 evento `WakeUp` → resposta final. Isso é inviável: o Lambda congela ao retornar, então não há
 como enviar o evento "depois". O que funciona é postar o evento durante a invocação e retornar

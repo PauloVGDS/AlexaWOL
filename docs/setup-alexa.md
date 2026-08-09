@@ -102,6 +102,39 @@ Não vale tentar diagnosticar isso disparando requisições ao endpoint OAuth po
 recusa requisição que não vem de navegador, devolvendo 400 tanto para configuração certa quanto
 errada. O teste não distingue nada e só parece sondagem.
 
+## 5.3b Permissão para enviar eventos — **sem isto o "ligar" não funciona**
+
+Este passo é fácil de não descobrir, porque nada no console indica que ele falta e a skill
+funciona quase inteira sem ele.
+
+No console da skill, painel esquerdo → **PERMISSIONS** → ligue o toggle **Send Alexa Events**.
+
+Sem essa permissão a Alexa **não envia o `AcceptGrant`**. Sem o `AcceptGrant` não há refresh
+token, e sem refresh token não há como postar o evento `WakeUp`. Todo o resto — volume,
+desligar, suspender, música, discovery — continua funcionando normalmente, porque nada disso
+passa pelo event gateway.
+
+### ⚠️ As credenciais aqui são OUTRAS
+
+Ao ligar o toggle aparece a seção **Alexa Skill Messaging**, com um botão **SHOW** que revela
+**Alexa Client Id** e **Alexa Client Secret**.
+
+**São essas que vão nas variáveis `LWA_CLIENT_ID` e `LWA_CLIENT_SECRET` do Lambda** — não as do
+Security Profile que você usou no Account Linking. Da documentação da Amazon:
+
+> *the client_id and client_secret are **not** the ones used by the skill that have been set up
+> using "Login with Amazon" (Build > Account Linking), but rather from the "Alexa Skill
+> Messaging" (Build > Permissions > Alexa Skill Messaging)*
+
+Os dois pares têm formato idêntico (`amzn1.application-oa2-client.…`), então trocar um pelo
+outro não gera erro em lugar nenhum da configuração. A falha aparece só depois, e só no
+"ligar". São papéis diferentes: o Security Profile autentica **o usuário** no vínculo da conta;
+o Alexa Skill Messaging autentica **a skill** perante o event gateway.
+
+Atualize as duas variáveis com os valores corretos ([setup-aws.md](setup-aws.md), passo 4.3) e
+então **desabilite e reabilite a skill no app** — o `AcceptGrant` só é enviado no momento do
+vínculo, então com a skill já vinculada ele não chega sozinho.
+
 ## 5.4 Habilitar e descobrir
 
 1. No app Alexa: **Mais → Skills e Jogos → Suas Skills → Modo de Desenvolvedor** → `AlexaWOL`

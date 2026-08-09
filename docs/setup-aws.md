@@ -121,6 +121,8 @@ $vars = @'
 }
 '@
 
+
+
 # UTF-8 sem BOM, explicitamente. NÃO troque por `Out-File -Encoding utf8`: veja abaixo.
 [System.IO.File]::WriteAllText("$PWD\env.json", $vars, (New-Object System.Text.UTF8Encoding $false))
 
@@ -152,6 +154,12 @@ Depois confira o que a AWS realmente guardou.
 para quem roda no 5.1 — e ambos costumam estar instalados na mesma máquina, o que torna a falha
 intermitente conforme o terminal usado. O `UTF8Encoding $false` se comporta igual nas duas
 versões.
+
+⚠️ **`LWA_CLIENT_ID` e `LWA_CLIENT_SECRET` são os de "Alexa Skill Messaging"**, não os do
+Security Profile do account linking. Eles ficam no console da skill em **Build → Permissions**,
+atrás do botão SHOW, e só aparecem depois de ligar o toggle **Send Alexa Events** — ver
+[setup-alexa.md](setup-alexa.md), passo 5.3b. O formato dos dois pares é idêntico, então usar o
+errado não gera erro aqui: a falha só surge no "ligar o computador".
 
 **Cole os valores do LWA por inteiro.** O `LWA_CLIENT_SECRET` vem no formato
 `amzn1.oa2-cs.v1.` seguido de uma string hexadecimal — o prefixo faz parte do segredo, não é
@@ -185,7 +193,7 @@ amzn1.ask.skill.a1b2c3d4-e5f6-7890-abcd-ef1234567890
 Se o que você copiou não tiver hífens, não é o Skill ID.
 
 ```powershell
-$skillId = 'amzn1.ask.skill.COLE-O-SEU-AQUI'
+$skillId = 'amzn1.ask.skill.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 
 aws lambda add-permission `
     --function-name alexawol `

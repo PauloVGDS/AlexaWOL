@@ -31,6 +31,17 @@ EVENT_GATEWAY = os.environ.get("EVENT_GATEWAY", "https://api.amazonalexa.com/v3/
 
 # -- Login with Amazon ------------------------------------------------------------------
 LWA_TOKEN_URL = "https://api.amazon.com/auth/o2/token"
+
+# ⚠️ ARMADILHA: estas NÃO são as credenciais do Security Profile usado no account linking.
+# São as de **Alexa Skill Messaging**, em Build > Permissions no console da skill, reveladas
+# pelo botão SHOW depois de ligar o toggle "Send Alexa Events".
+#
+# As duas têm exatamente o mesmo formato (`amzn1.application-oa2-client.…`), então trocar uma
+# pela outra não dá erro nenhum na configuração — a falha só aparece muito depois, e só no
+# "ligar o computador", porque é o único caminho que troca o código do AcceptGrant por tokens.
+#
+# Papéis distintos: o Security Profile autentica o USUÁRIO no vínculo da conta; estas aqui
+# autenticam a SKILL perante o event gateway.
 LWA_CLIENT_ID = os.environ["LWA_CLIENT_ID"]
 LWA_CLIENT_SECRET = os.environ["LWA_CLIENT_SECRET"]
 SSM_REFRESH_TOKEN_PARAM = os.environ.get("SSM_REFRESH_TOKEN_PARAM", "/alexawol/refresh_token")
