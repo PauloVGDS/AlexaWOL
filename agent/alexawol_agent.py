@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from shared.protocol import Rejected, prune_nonces, verify_command  # noqa: E402
 
 import config_location  # noqa: E402
-from actions import media, power, volume  # noqa: E402
+from actions import media, power, system, volume  # noqa: E402
 
 log = logging.getLogger("alexawol")
 
@@ -160,6 +160,9 @@ class Agent:
             log.exception("não consegui ler o estado do áudio")
             state = {"online": online, "ts": int(time.time())}
 
+        # Métricas são informativas: se falharem, o estado essencial ainda vai.
+        state.update(system.metricas())
+
         self.client.publish(self.state_topic, json.dumps(state), qos=1, retain=True)
 
     def _state_loop(self) -> None:
@@ -172,6 +175,9 @@ class Agent:
         while True:
             time.sleep(STATE_REFRESH_SECONDS)
             if self.client.is_connected():
+                # A leitura da GPU custa ~2,5 s e por isso só acontece aqui, nesta thread de
+                # fundo. O caminho dos comandos usa o valor em cache e nunca bloqueia.
+                system.atualizar_gpu()
                 self.publish_state()
 
     # -- Execução -----------------------------------------------------------

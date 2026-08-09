@@ -30,14 +30,28 @@ def header(namespace: str, name: str, correlation_token: str | None = None) -> d
     return head
 
 
-def prop(namespace: str, name: str, value, uncertainty_ms: int = 500) -> dict:
-    return {
+def prop(
+    namespace: str,
+    name: str,
+    value,
+    uncertainty_ms: int = 500,
+    instance: str | None = None,
+) -> dict:
+    """Uma propriedade de contexto.
+
+    `instance` só é usado pelas interfaces genéricas (RangeController, ModeController), que
+    podem aparecer várias vezes no mesmo endpoint e precisam ser distinguidas.
+    """
+    propriedade = {
         "namespace": namespace,
         "name": name,
         "value": value,
         "timeOfSample": timestamp(),
         "uncertaintyInMilliseconds": uncertainty_ms,
     }
+    if instance:
+        propriedade["instance"] = instance
+    return propriedade
 
 
 def _correlation(directive: dict) -> str | None:

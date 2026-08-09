@@ -45,7 +45,8 @@ from bridge import mqtt_client  # noqa: E402
 # -- Dublês da ponte MQTT e do event gateway ----------------------------------------------
 published: list[tuple[str, dict]] = []
 wake_ups: list[tuple[str, str]] = []
-FAKE_STATE = {"online": True, "volume": 45, "muted": False}
+FAKE_STATE = {"online": True, "volume": 45, "muted": False,
+              "uptime_min": 137, "cpu_pct": 12, "ram_pct": 34, "disco_livre_pct": 6}
 
 mqtt_client.publish_command = lambda action, params=None: published.append((action, params or {}))
 mqtt_client.read_state = lambda timeout=None: FAKE_STATE
@@ -108,6 +109,13 @@ check("tem PowerController", "Alexa.PowerController" in interfaces)
 check("tem Speaker", "Alexa.Speaker" in interfaces)
 check("tem WakeOnLANController", "Alexa.WakeOnLANController" in interfaces)
 check("tem PlaybackController", "Alexa.PlaybackController" in interfaces)
+faixas = [c for c in pc["capabilities"] if c["interface"] == "Alexa.RangeController"]
+check("declara 7 metricas", len(faixas) == 7, f"({len(faixas)})")
+check("metricas sao nonControllable", all(f["properties"]["nonControllable"] for f in faixas))
+check("cada metrica tem instance unico", len({f["instance"] for f in faixas}) == 7)
+check("metricas tem nome em pt-BR", all(
+    any(n["value"].get("locale") == "pt-BR" for n in f["capabilityResources"]["friendlyNames"])
+    for f in faixas))
 ops = interfaces.get("Alexa.PlaybackController", {}).get("supportedOperations")
 check("declara as 5 operacoes", ops == ["Play", "Pause", "Next", "Previous", "StartOver"], f"({ops})")
 mac = interfaces.get("Alexa.WakeOnLANController", {}).get("configuration", {}).get("MACAddresses")
@@ -238,12 +246,26 @@ check("nome StateReport", res["event"]["header"]["name"] == "StateReport")
 check("powerState ON quando online", prop_value(res, "Alexa.PowerController", "powerState") == "ON")
 check("reporta volume 45", prop_value(res, "Alexa.Speaker", "volume") == 45)
 
+# As metricas sao instancias de RangeController; cada uma precisa vir com o SEU instance.
+def range_value(result, instance):
+    for item in result.get("context", {}).get("properties", []):
+        if item["namespace"] == "Alexa.RangeController" and item.get("instance") == instance:
+            return item["value"]
+    return None
+
+for inst, esperado in (("PC.Uptime", 137), ("PC.CPU", 12), ("PC.RAM", 34), ("PC.Disk", 6)):
+    check(f"reporta {inst}", range_value(res, inst) == esperado, f"({range_value(res, inst)})")
+
 original = mqtt_client.read_state
 mqtt_client.read_state = lambda timeout=None: None
 state.mqtt_client = mqtt_client
 playback.mqtt_client = mqtt_client
 res = lambda_function.lambda_handler(directive("Alexa", "ReportState", endpoint="alexawol-pc"), None)
 check("powerState OFF sem retained", prop_value(res, "Alexa.PowerController", "powerState") == "OFF")
+check(
+    "sem retained, nenhuma metrica e reportada",
+    not [p for p in res["context"]["properties"] if p["namespace"] == "Alexa.RangeController"],
+)
 check(
     "conectividade segue OK com PC desligado",
     prop_value(res, "Alexa.EndpointHealth", "connectivity") == {"value": "OK"},

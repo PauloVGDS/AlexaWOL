@@ -150,6 +150,16 @@ justamente porque são intenções diferentes — unificar quebraria uma delas.
 As chamadas `try_*_async` **devolvem um booleano**. Ignorá-lo faz uma recusa do player passar
 por sucesso e o plano B nunca ser tentado; `_executar_smtc` propaga esse retorno de propósito.
 
+**`alexa/metrics.py` é fonte única de verdade.** O `discovery.py` monta as capabilities e o
+`state.py` monta as propriedades a partir da mesma tupla. Definir nos dois lugares repetiria o
+erro que o `scene.py` cometeu, em que uma lista e um mapa saíram de sincronia. Métrica nova é
+uma entrada ali mais o campo correspondente no estado publicado pelo agente.
+
+**A leitura da GPU custa ~2,5 s e por isso só roda na thread periódica.** É `subprocess` para o
+PowerShell, porque o contador `\GPU Engine(*)\Utilization Percentage` serve para qualquer
+fabricante — nvidia-smi só cobriria NVIDIA. O valor fica num cache com validade de 120 s;
+`metricas()` apenas lê, nunca bloqueia. Não mova essa chamada para o caminho dos comandos.
+
 **A mídia da cena de música nunca trafega pela rede.** O comando é só o verbo `play_music`; o
 alvo vem de `[media].target` no `config.toml` do agente. Não mova isso para o payload — quem
 tivesse o segredo HMAC faria o PC abrir qualquer programa.

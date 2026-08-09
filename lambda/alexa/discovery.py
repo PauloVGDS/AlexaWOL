@@ -7,6 +7,7 @@ suspender, porque PowerController não comporta três estados.
 from __future__ import annotations
 
 import config
+from alexa import metrics
 from alexa.util import header
 
 
@@ -46,6 +47,8 @@ def _computer_endpoint() -> dict:
                 supportedOperations=["Play", "Pause", "Next", "Previous", "StartOver"],
             ),
             _capability("Alexa.EndpointHealth", ["connectivity"]),
+            # Mostradores de leitura apenas — tempo ligado, CPU, memória, disco.
+            *metrics.capabilities(),
         ],
     }
 

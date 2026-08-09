@@ -163,6 +163,29 @@ Suspender e tocar música são endpoints separados, expostos como cenas, porque 
 só tem dois estados e o "desligar" já ocupa um deles. Para frases mais curtas, crie Rotinas no
 app.
 
+## Informações no app
+
+Além do interruptor, o card do computador mostra métricas em leitura apenas — e dá para
+perguntá-las por voz, tipo *"Alexa, qual é o uso do processador do computador?"*:
+
+| Métrica | Fonte | Disponibilidade |
+|---|---|---|
+| Tempo ligado | `psutil.boot_time()` | sempre |
+| Uso do processador | psutil | sempre |
+| Uso de memória | psutil | sempre |
+| Espaço livre em disco | psutil | sempre |
+| Uso da placa de vídeo | contador de desempenho do Windows | sempre — **qualquer fabricante** |
+| Temperatura de CPU e GPU | LibreHardwareMonitor | só com ele instalado e rodando |
+
+São instâncias de `Alexa.RangeController` com `nonControllable: true`, o que faz o app exibir o
+valor sem oferecer controle. Com o PC desligado nenhuma métrica é reportada — mostrar zero
+seria mentira.
+
+**As temperaturas são o ponto fraco.** O Windows não expõe sensor de CPU de forma confiável: o
+WMI responde "operação não suportada" na maioria dos desktops, e placas AMD não têm equivalente
+ao `nvidia-smi`. Sem o [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)
+rodando em segundo plano, esses dois campos simplesmente não aparecem — o resto funciona igual.
+
 ## Estrutura
 
 | Caminho | O que é |

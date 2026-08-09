@@ -8,3 +8,8 @@ comtypes>=1.4.0
 # Sem estes pacotes o agente continua funcionando, caindo para as teclas de mídia.
 winrt-Windows.Media>=3.0
 winrt-Windows.Media.Control>=3.0
+# Métricas exibidas no app da Alexa: tempo ligado, CPU, memória e disco.
+psutil>=5.9
+# Opcional — só serve para a temperatura da CPU, e ainda exige o LibreHardwareMonitor
+# rodando. Ver agent/actions/system.py.
+# WMI>=1.5.1

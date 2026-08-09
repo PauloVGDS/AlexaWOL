@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from alexa import metrics
 from alexa.util import prop, response
 from bridge import mqtt_client
 
@@ -30,6 +31,21 @@ def properties(state: dict | None) -> list[dict]:
             props.append(prop("Alexa.Speaker", "volume", int(state["volume"])))
         if "muted" in state:
             props.append(prop("Alexa.Speaker", "muted", bool(state["muted"])))
+
+        # Métricas: só reportamos as que o agente publicou. Com o PC desligado nenhuma é
+        # incluída — reportar zero seria mentira, e a Alexa aceita a propriedade ausente.
+        for metrica in metrics.METRICAS:
+            valor = state.get(metrica["campo"])
+            if valor is None:
+                continue
+            props.append(
+                prop(
+                    "Alexa.RangeController",
+                    "rangeValue",
+                    int(valor),
+                    instance=metrica["instance"],
+                )
+            )
 
     return props
 
