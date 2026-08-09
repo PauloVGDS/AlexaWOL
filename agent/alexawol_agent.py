@@ -133,6 +133,8 @@ class Agent:
             media.next_track()
         elif action == "media_previous":
             media.previous_track()
+        elif action == "media_restart":
+            media.restart_track()
         elif action == "report":
             pass  # o publish_state do chamador já basta
         else:

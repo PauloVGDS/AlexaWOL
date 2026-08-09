@@ -109,7 +109,7 @@ check("tem Speaker", "Alexa.Speaker" in interfaces)
 check("tem WakeOnLANController", "Alexa.WakeOnLANController" in interfaces)
 check("tem PlaybackController", "Alexa.PlaybackController" in interfaces)
 ops = interfaces.get("Alexa.PlaybackController", {}).get("supportedOperations")
-check("declara so Next e Previous", ops == ["Next", "Previous"], f"({ops})")
+check("declara Next, Previous e StartOver", ops == ["Next", "Previous", "StartOver"], f"({ops})")
 mac = interfaces.get("Alexa.WakeOnLANController", {}).get("configuration", {}).get("MACAddresses")
 check("MAC no formato com hifen", mac == ["00-11-22-33-44-55"], f"({mac})")
 for index, label in ((1, "suspender"), (2, "musica")):
@@ -204,6 +204,13 @@ res = lambda_function.lambda_handler(
     directive("Alexa.PlaybackController", "Previous", endpoint="alexawol-pc"), None
 )
 check("Previous publica media_previous", published == [("media_previous", {})], f"({published})")
+
+# StartOver e Previous precisam ser acoes DIFERENTES: um toque rebobina, dois voltam.
+published.clear()
+res = lambda_function.lambda_handler(
+    directive("Alexa.PlaybackController", "StartOver", endpoint="alexawol-pc"), None
+)
+check("StartOver publica media_restart", published == [("media_restart", {})], f"({published})")
 
 # Play/Pause nao sao declarados porque a tecla do Windows e um toggle. Se a Alexa mandar
 # assim mesmo, tem que ser recusado em vez de virar um "proxima faixa" silencioso.

@@ -137,7 +137,12 @@ música entrou, ativá-la teria suspendido o PC. `tests/test_lambda.py` agora co
 verificando que cada cena publica a **sua** ação, e que endpoint desconhecido devolve
 `NO_SUCH_ENDPOINT` em vez de cair num padrão.
 
-**`PlaybackController` declara só `Next` e `Previous`.** Não é omissão: o Windows tem uma única
+**`Previous` dá dois toques na tecla; `StartOver` dá um.** Não é bug nem duplicação: um toque
+em "anterior" rebobina a faixa atual em vez de trocar, na maioria dos players. As duas
+operações da Alexa mapeiam em ações distintas do agente (`media_previous` e `media_restart`)
+justamente por isso. Unificar as duas quebraria uma das intenções.
+
+**`PlaybackController` não declara `Play` nem `Pause`.** Não é omissão: o Windows tem uma única
 tecla de play/pause, que alterna. A Alexa trata `Play` e `Pause` como operações distintas, então
 mapear as duas na mesma tecla faria "pausar" retomar a música já pausada. O handler recusa essas
 operações explicitamente em vez de deixá-las virar um "próxima faixa" silencioso. Suportá-las de

@@ -32,7 +32,8 @@ ACTIONS = frozenset(
         # qualquer coisa.
         "play_music",
         "media_next",  # tecla de mídia "próxima faixa"
-        "media_previous",  # tecla de mídia "faixa anterior"
+        "media_previous",  # volta de fato — dois toques (ver actions/media.py)
+        "media_restart",  # recomeça a faixa atual — um toque só
     }
 )
 

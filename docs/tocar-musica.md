@@ -137,12 +137,29 @@ dependência WinRT.
 
 Implementado via `Alexa.PlaybackController` no endpoint principal:
 
-- "Alexa, próxima no computador"
-- "Alexa, anterior no computador"
+| Frase | Operação | O agente faz |
+|---|---|---|
+| "Alexa, próxima no computador" | `Next` | um toque em "próxima" |
+| "Alexa, anterior no computador" | `Previous` | **dois** toques em "anterior" |
+| "Alexa, recomeçar no computador" | `StartOver` | **um** toque em "anterior" |
 
 O agente emite as teclas de mídia do Windows (`VK_MEDIA_NEXT_TRACK` e `VK_MEDIA_PREV_TRACK`)
 com `keybd_event`. Isso funciona com Spotify, YouTube e VLC de uma vez, porque todos registram
 o atalho global — não há integração com player nenhum.
+
+### Por que "anterior" dá dois toques
+
+Um toque em "anterior" **rebobina a faixa atual** em vez de trocar, comportamento padrão do
+Spotify e da maioria dos players. Quem quer voltar de verdade precisa apertar duas vezes: o
+primeiro toque leva a posição ao início, e o segundo, já no início, troca de faixa.
+
+Como a Alexa tem operações distintas para as duas intenções, cada uma mapeia no que
+corresponde: `StartOver` dá um toque, `Previous` dá dois, com 300 ms entre eles — curto demais
+e o player junta os dois num só.
+
+**Ressalva:** se a faixa começou há poucos segundos, o primeiro toque já troca de faixa e o
+segundo volta mais uma, retrocedendo duas. Corrigir isso exigiria ler a posição de reprodução
+para escolher entre um e dois toques, o que só o SMTC do Windows oferece.
 
 ### Por que não tem "pausar" e "continuar"
 

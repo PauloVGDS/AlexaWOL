@@ -45,7 +45,7 @@ def _computer_endpoint() -> dict:
             # declarar as duas operações nela faria "pausar" retomar a música já pausada.
             _capability(
                 "Alexa.PlaybackController",
-                supportedOperations=["Next", "Previous"],
+                supportedOperations=["Next", "Previous", "StartOver"],
             ),
             _capability("Alexa.EndpointHealth", ["connectivity"]),
         ],

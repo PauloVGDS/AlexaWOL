@@ -20,7 +20,11 @@ log = logging.getLogger()
 
 _ACTION_BY_OPERATION = {
     "Next": "media_next",
+    # Um toque em "anterior" rebobina a faixa em vez de trocar, na maioria dos players. Por
+    # isso as duas operações da Alexa mapeiam em ações diferentes: StartOver dá um toque,
+    # Previous dá dois.
     "Previous": "media_previous",
+    "StartOver": "media_restart",
 }
 
 

@@ -82,7 +82,8 @@ Siga nesta ordem — cada etapa valida a anterior e evita depurar três camadas 
 | "Alexa, aumentar o volume do computador em 20" | `Speaker.AdjustVolume` | Ajuste relativo |
 | "Alexa, silenciar o computador" | `Speaker.SetMute` | Mudo |
 | "Alexa, próxima no computador" | `PlaybackController.Next` | Avança a faixa |
-| "Alexa, anterior no computador" | `PlaybackController.Previous` | Volta a faixa |
+| "Alexa, anterior no computador" | `PlaybackController.Previous` | Volta a faixa (dois toques) |
+| "Alexa, recomeçar no computador" | `PlaybackController.StartOver` | Recomeça a faixa atual |
 
 Suspender e tocar música são endpoints separados, expostos como cenas, porque
 `PowerController` só tem dois estados e o "desligar" já ocupa um deles. Para frases mais

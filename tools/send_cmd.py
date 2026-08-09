@@ -90,6 +90,7 @@ def main() -> None:
             "play_music",
             "media_next",
             "media_previous",
+            "media_restart",
         ],
     )
     parser.add_argument("--percent", type=int, default=30)
