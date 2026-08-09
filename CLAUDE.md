@@ -155,10 +155,18 @@ por sucesso e o plano B nunca ser tentado; `_executar_smtc` propaga esse retorno
 erro que o `scene.py` cometeu, em que uma lista e um mapa saíram de sincronia. Métrica nova é
 uma entrada ali mais o campo correspondente no estado publicado pelo agente.
 
-**A leitura da GPU custa ~2,5 s e por isso só roda na thread periódica.** É `subprocess` para o
-PowerShell, porque o contador `\GPU Engine(*)\Utilization Percentage` serve para qualquer
-fabricante — nvidia-smi só cobriria NVIDIA. O valor fica num cache com validade de 120 s;
-`metricas()` apenas lê, nunca bloqueia. Não mova essa chamada para o caminho dos comandos.
+**A leitura da GPU responde por ~96% do custo do agente.** Medido: numa janela de 150 s o
+processo consome 0,09 s de CPU e os PowerShell da GPU consomem 2,73 s. É `subprocess` porque o
+contador `\GPU Engine(*)\Utilization Percentage` serve para qualquer fabricante — nvidia-smi
+cobriria só NVIDIA.
+
+Daí três decisões que não devem ser desfeitas: a chamada só acontece na thread periódica, nunca
+no caminho dos comandos; `atualizar_gpu()` limita a frequência internamente a 120 s, e não no
+chamador, para ninguém tornar a leitura cara por engano; e `metricas()` apenas lê o cache. Baixar
+o intervalo para os 30 s do ciclo de estado dobraria com folga o consumo do agente inteiro.
+
+`tools/medir_agente.py` refaz a medição — ele separa o processo dos subprocessos, que é o que
+revela onde o custo realmente está.
 
 **A mídia da cena de música nunca trafega pela rede.** O comando é só o verbo `play_music`; o
 alvo vem de `[media].target` no `config.toml` do agente. Não mova isso para o payload — quem

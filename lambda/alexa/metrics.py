@@ -53,25 +53,6 @@ METRICAS = (
         "maximo": 100,
         "unidade": "Alexa.Unit.Percent",
     },
-    # Temperaturas só aparecem com o LibreHardwareMonitor rodando. O agente omite os campos
-    # quando não consegue ler, e o Lambda omite as propriedades correspondentes — declarar a
-    # capability mesmo assim é inofensivo e evita ter que redescobrir se você instalar depois.
-    {
-        "instance": "PC.CPUTemp",
-        "campo": "cpu_temp",
-        "nomes": {"pt-BR": "temperatura do processador", "en-US": "CPU temperature"},
-        "minimo": 0,
-        "maximo": 120,
-        "unidade": "Alexa.Unit.Temperature.Celsius",
-    },
-    {
-        "instance": "PC.GPUTemp",
-        "campo": "gpu_temp",
-        "nomes": {"pt-BR": "temperatura da placa de vídeo", "en-US": "GPU temperature"},
-        "minimo": 0,
-        "maximo": 120,
-        "unidade": "Alexa.Unit.Temperature.Celsius",
-    },
 )
 
 

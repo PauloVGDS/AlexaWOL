@@ -175,16 +175,34 @@ perguntá-las por voz, tipo *"Alexa, qual é o uso do processador do computador?
 | Uso de memória | psutil | sempre |
 | Espaço livre em disco | psutil | sempre |
 | Uso da placa de vídeo | contador de desempenho do Windows | sempre — **qualquer fabricante** |
-| Temperatura de CPU e GPU | LibreHardwareMonitor | só com ele instalado e rodando |
 
 São instâncias de `Alexa.RangeController` com `nonControllable: true`, o que faz o app exibir o
 valor sem oferecer controle. Com o PC desligado nenhuma métrica é reportada — mostrar zero
 seria mentira.
 
-**As temperaturas são o ponto fraco.** O Windows não expõe sensor de CPU de forma confiável: o
-WMI responde "operação não suportada" na maioria dos desktops, e placas AMD não têm equivalente
-ao `nvidia-smi`. Sem o [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)
-rodando em segundo plano, esses dois campos simplesmente não aparecem — o resto funciona igual.
+**Temperatura ficou de fora de propósito.** O Windows não a expõe de forma confiável: o WMI
+responde "operação não suportada" na maioria dos desktops e placas AMD não têm equivalente ao
+`nvidia-smi`. A única fonte seria o LibreHardwareMonitor rodando em segundo plano, e exigir um
+aplicativo extra permanente não compensa por um número.
+
+### Quanto o agente custa
+
+Medido nesta máquina, numa janela de 150 s com `tools\medir_agente.py`:
+
+```
+CPU do processo      0,09 s      ← o agente em si
+CPU dos subprocessos 2,73 s      ← leitura da GPU
+ocupação de 1 núcleo 1,88%
+do processador todo  0,157%
+memória (pico)       37 MB
+```
+
+O agente propriamente dito é gratuito: passa o tempo bloqueado esperando rede. **Quase todo o
+custo é a leitura da GPU**, que dispara um PowerShell e leva ~2,5 s. Por isso ela é relida a
+cada 2 minutos, e não a cada ciclo de estado — a 30 s a ocupação era 4,78% de um núcleo.
+
+Se você quiser custo praticamente zero, remova a entrada `PC.GPU` de `lambda/alexa/metrics.py`
+e a leitura correspondente no agente: sobra 0,06% de um núcleo.
 
 ## Estrutura
 
@@ -196,6 +214,7 @@ rodando em segundo plano, esses dois campos simplesmente não aparecem — o res
 | `tools/check_requisitos.ps1` | Diagnóstico do sistema — só lê, não altera |
 | `tools/setup_local.ps1` | Instala dependências, cria o config e gera o segredo |
 | `tools/wol_test.py` | Teste isolado de Wake-on-LAN, sem Alexa e sem nuvem |
+| `tools/medir_agente.py` | Mede CPU e memória do agente, separando os subprocessos |
 | `tools/send_cmd.py` | Publica comandos assinados à mão, para testar o agente |
 | `tests/test_lambda.py` | Exercita o handler sem AWS, sem broker e sem Alexa |
 | `docs/` | Guias de instalação, diagnóstico e extensão |

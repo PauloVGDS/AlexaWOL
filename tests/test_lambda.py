@@ -110,9 +110,9 @@ check("tem Speaker", "Alexa.Speaker" in interfaces)
 check("tem WakeOnLANController", "Alexa.WakeOnLANController" in interfaces)
 check("tem PlaybackController", "Alexa.PlaybackController" in interfaces)
 faixas = [c for c in pc["capabilities"] if c["interface"] == "Alexa.RangeController"]
-check("declara 7 metricas", len(faixas) == 7, f"({len(faixas)})")
+check("declara 5 metricas", len(faixas) == 5, f"({len(faixas)})")
 check("metricas sao nonControllable", all(f["properties"]["nonControllable"] for f in faixas))
-check("cada metrica tem instance unico", len({f["instance"] for f in faixas}) == 7)
+check("cada metrica tem instance unico", len({f["instance"] for f in faixas}) == 5)
 check("metricas tem nome em pt-BR", all(
     any(n["value"].get("locale") == "pt-BR" for n in f["capabilityResources"]["friendlyNames"])
     for f in faixas))

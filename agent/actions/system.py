@@ -8,10 +8,10 @@ fabricante — não depende de nvidia-smi nem do driver AMD. Mas ler custa ~2,5 
 para o caminho dos comandos. Por isso o valor é atualizado só pela thread periódica de estado,
 por `atualizar_gpu()`, e `metricas()` apenas lê o cache sem nunca bloquear.
 
-**Temperatura** exige o LibreHardwareMonitor rodando em segundo plano, que publica um namespace
-WMI próprio. O `MSAcpi_ThermalZoneTemperature` responde "operação não suportada" na maioria dos
-desktops, e placas AMD não têm equivalente ao nvidia-smi. Sem o LibreHardwareMonitor os campos
-de temperatura simplesmente não aparecem.
+Temperatura ficou de fora de propósito: o Windows não a expõe de forma confiável — o
+`MSAcpi_ThermalZoneTemperature` responde "operação não suportada" na maioria dos desktops e
+placas AMD não têm equivalente ao nvidia-smi. A única fonte seria o LibreHardwareMonitor
+rodando em segundo plano, e exigir um app extra não compensa por um número.
 """
 
 from __future__ import annotations
@@ -34,9 +34,15 @@ _PS_GPU = (
     "Select-Object -ExpandProperty Sum"
 )
 
-# Depois disto o valor de GPU é considerado velho e deixa de ser publicado — melhor omitir do
-# que mostrar um número parado no app.
-_GPU_VALIDADE_S = 120
+# Com que frequência a GPU é relida. Deliberadamente muito maior que o ciclo de estado: a
+# leitura custa ~2,5 s de CPU e responde por quase todo o consumo do agente, enquanto o número
+# em si é de painel — ninguém precisa dele fresco a cada 30 s. Medido: a 30 s o agente ocupava
+# 4,8% de um núcleo; a 120 s cai para cerca de um quarto disso.
+_GPU_INTERVALO_S = 120
+
+# Depois disto o valor é considerado velho e deixa de ser publicado — melhor omitir do que
+# mostrar um número parado no app. Precisa ser maior que o intervalo de releitura.
+_GPU_VALIDADE_S = 300
 
 _gpu: dict = {"pct": None, "ts": 0.0}
 
@@ -69,8 +75,14 @@ def disco_livre_percentual() -> int:
 # ---------------------------------------------------------------- GPU
 
 
-def atualizar_gpu() -> None:
-    """Lê o uso da GPU e guarda no cache. Custa ~2,5 s — só chame de thread de fundo."""
+def atualizar_gpu(forcar: bool = False) -> None:
+    """Relê o uso da GPU se já passou o intervalo. Custa ~2,5 s — só de thread de fundo.
+
+    A limitação de frequência mora aqui, e não no chamador, para que o laço do agente
+    continue simples e ninguém consiga tornar a leitura cara por engano.
+    """
+    if not forcar and time.time() - _gpu["ts"] < _GPU_INTERVALO_S:
+        return
     try:
         resultado = subprocess.run(
             ["powershell", "-NoProfile", "-Command", _PS_GPU],
@@ -91,37 +103,6 @@ def gpu_percentual() -> int | None:
     if _gpu["pct"] is None or time.time() - _gpu["ts"] > _GPU_VALIDADE_S:
         return None
     return _gpu["pct"]
-
-
-# ---------------------------------------------------------------- temperaturas
-
-
-def _temperaturas_lhm() -> dict:
-    """Temperaturas do LibreHardwareMonitor, se ele estiver rodando."""
-    try:
-        import wmi  # type: ignore
-    except ImportError:
-        return {}
-
-    for namespace in (r"root\LibreHardwareMonitor", r"root\OpenHardwareMonitor"):
-        try:
-            sensores = wmi.WMI(namespace=namespace).Sensor()
-        except Exception:
-            continue
-
-        leituras: dict[str, list[float]] = {"cpu_temp": [], "gpu_temp": []}
-        for s in sensores:
-            if s.SensorType != "Temperature":
-                continue
-            nome = (s.Name or "").upper()
-            if "GPU" in nome:
-                leituras["gpu_temp"].append(s.Value)
-            elif "CPU" in nome:
-                leituras["cpu_temp"].append(s.Value)
-        # O pico é o número que importa num painel de temperatura.
-        return {k: round(max(v), 1) for k, v in leituras.items() if v}
-
-    return {}
 
 
 # ---------------------------------------------------------------- agregado
@@ -148,10 +129,5 @@ def metricas() -> dict:
             continue
         if valor is not None:
             resultado[nome] = valor
-
-    try:
-        resultado.update(_temperaturas_lhm())
-    except Exception:
-        log.exception("falha ao ler temperaturas")
 
     return resultado
