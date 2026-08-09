@@ -44,8 +44,31 @@ No console da skill, em **Account Linking**:
 Salve. A página vai mostrar três **Redirect URLs** (`https://pitangui.amazon.com/…`,
 `https://layla.amazon.com/…`, `https://alexa.amazon.co.jp/…`).
 
-Volte ao perfil LWA → **Web Settings** → **Allowed Return URLs** e cole **as três**. Faltando
-uma, o vínculo falha exatamente no aplicativo que usa aquela região.
+Todas seguem o formato `https://<host>/api/skill/link/<SEU-VENDOR-ID>`, com o mesmo vendor ID
+nas três — muda só o host: `pitangui` (América do Norte), `layla` (Europa) e `alexa.amazon.co.jp`
+(Extremo Oriente).
+
+Volte ao perfil LWA → **Web Settings** → **Edit** → **Allowed Return URLs** e cole **as três**,
+cada uma numa entrada separada. Três cuidados, porque o LWA compara string literal: sem barra
+no final, sem espaço invisível colado na cópia, e exatamente como o console da skill mostra.
+
+### ⚠️ O erro que aparece se você pular isto
+
+```
+lwa-invalid-parameter-bad-redirect-uri-vendor
+```
+
+É um HTTP 400 ao tentar vincular a conta no app. Significa que o LWA recebeu um `redirect_uri`
+que não está na lista de retorno autorizada do Security Profile. **A URL recusada vem na
+própria mensagem de erro** — dá para derivar as outras duas trocando o host, já que o vendor ID
+é o mesmo nas três.
+
+Cadastrar só a da sua região resolve o sintoma imediato mas deixa a armadilha montada: se o app
+cair em outro host, ou você usar o site em vez do celular, o vínculo falha de novo e parece
+aleatório, funcionando num lugar e não em outro. Cole as três de uma vez.
+
+Depois de salvar, espere um ou dois minutos antes de tentar de novo — a alteração no LWA não
+propaga instantaneamente.
 
 ## 5.4 Habilitar e descobrir
 
