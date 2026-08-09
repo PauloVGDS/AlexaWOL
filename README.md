@@ -1,74 +1,128 @@
 # AlexaWOL
 
-Controle do PC pela Alexa — volume, ligar, desligar e suspender — sem mensalidade e sem
+Controle do PC pela Alexa — ligar, desligar, suspender, volume e mídia — sem mensalidade e sem
 hardware adicional.
 
-Skills prontas na loja cobram assinatura porque hospedam o servidor. Aqui o servidor é seu, e
-o custo recorrente é **R$ 0**.
+Skills prontas na loja cobram assinatura porque hospedam o servidor. Aqui o servidor é seu, e o
+custo recorrente é **R$ 0**: o uso cabe folgadamente no always-free do AWS Lambda e no plano
+gratuito permanente do HiveMQ.
 
-## Como funciona
+## Arquitetura
 
-O truque central é a interface oficial `Alexa.WakeOnLANController`: **a própria Echo transmite
-o magic packet na rede local**. Não é preciso Raspberry Pi, ESP32, port-forward no roteador nem
-emulação de lâmpada Hue/WeMo.
+O projeto tem **dois caminhos de comando independentes**. Entender essa separação é o que torna
+qualquer defeito diagnosticável, porque ela diz de antemão onde o problema *não* pode estar.
 
 ```
 "Alexa, ligar o computador"
   └─ Alexa Cloud → Lambda (us-east-1)
        ├─ POST evento WakeUp → api.amazonalexa.com/v3/events
-       │    └─ Echo transmite o magic packet na LAN → o PC liga
+       │    └─ a Echo transmite o magic packet na LAN → o PC liga
        └─ retorna Alexa.Response (powerState ON)
-                                          ↑ nenhuma infraestrutura nossa nesse caminho
+                                    ↑ nenhuma infraestrutura nossa nesse caminho
 
 "Alexa, colocar o volume do computador em 30"
-"Alexa, desligar o computador"
-"Alexa, ativar suspensão do computador"
-  └─ Alexa Cloud → Lambda → MQTT (HiveMQ, TLS+ACL) → agente Python no PC
-                                                        └─ pycaw / shutdown / suspend
+"Alexa, desligar / suspender / próxima no computador"
+  └─ Alexa Cloud → Lambda → MQTT (HiveMQ, TLS + ACL) → agente Python no PC
+                                                          └─ pycaw / shutdown / teclas de mídia
 ```
 
-Ligar não depende de nada nosso. Volume e desligar só fazem sentido com o PC já ligado, então
-o agente nunca precisa estar disponível 24 horas.
+**Ligar** usa a interface oficial `Alexa.WakeOnLANController`: o Lambda posta um evento e **a
+própria Echo transmite o magic packet** na rede local. Não passa pelo MQTT, não passa pelo
+agente, não passa por servidor nenhum nosso. Foi essa descoberta que eliminou a necessidade de
+um Raspberry Pi, ESP32 ou port-forward no roteador.
 
-A documentação da Amazon descreve o "ligar" com um `Alexa.DeferredResponse` antes do evento
-`WakeUp`. Isso é inviável no Lambda, que congela assim que retorna — não haveria como enviar o
-evento "depois". Postar o evento durante a invocação e retornar a resposta normal funciona e é
-bem mais simples.
+**Todo o resto** só faz sentido com o PC ligado, então trafega por MQTT até um agente local. O
+agente nunca precisa estar disponível 24 horas.
+
+Na prática isso significa: se "ligar" falhar, o problema está no evento, no token ou no BIOS —
+nunca no agente. Se o resto falhar, está no broker ou no agente — nunca no event gateway.
+
+### As três peças
+
+| Peça | O que faz | Onde roda |
+|---|---|---|
+| `lambda/` | Traduz diretivas da Alexa em ações; fala com o event gateway e com o broker | AWS, `us-east-1` |
+| `agent/` | Escuta o broker e executa no Windows: volume, energia, mídia | Sessão do usuário, no PC |
+| `shared/protocol.py` | Assinatura HMAC e allowlist de ações — usado pelos dois lados | Ambos |
+
+O `shared/` é **copiado** para dentro do zip do Lambda pelo `build.ps1`, não importado. Mudar o
+formato da mensagem exige redeployar os dois lados juntos.
+
+### Segurança em duas camadas
+
+O HiveMQ dá TLS, usuário/senha e ACL por tópico, com **credenciais separadas** para quem publica
+comandos e quem os executa. Acima disso, todo comando carrega HMAC-SHA256 sobre
+`{action, params, ts, nonce}` — o agente recusa assinatura inválida, timestamp fora de 30 s e
+nonce repetido, e só executa ações de uma allowlist fixa.
+
+A segunda camada existe para o caso de broker comprometido ou credencial vazada. E é por isso
+que o alvo da mídia mora no config local, nunca no payload: o comando diz "toque", não *o quê*.
+
+### Estado sem polling
+
+O agente publica `{online, volume, muted}` como mensagem **retida** e configura um *last will*
+com `online: false`. É assim que a Alexa sabe se o PC está ligado sem ninguém ficar consultando.
+Ausência de retained significa "o agente nunca conectou" — ou seja, PC desligado.
 
 ## Requisitos
 
-- PC com Windows e **rede cabeada** (Wake-on-LAN por Wi-Fi é pouco confiável)
+- Windows 10/11 com **rede cabeada** (Wake-on-LAN por Wi-Fi é pouco confiável)
+- **Python 3.11+** no PC (o agente usa `tomllib`)
 - Um dispositivo Echo **na mesma sub-rede** do PC — requisito oficial da Amazon
-- Python 3.11+ no PC (usa `tomllib` da biblioteca padrão)
-- Conta AWS (o uso fica dentro do always-free do Lambda: 1M requisições/mês)
-- Conta gratuita no HiveMQ Cloud Serverless
-- Conta de desenvolvedor Alexa — **a mesma em que a Echo está registrada**
+- Conta AWS, conta gratuita no HiveMQ, e conta de desenvolvedor Alexa **a mesma da Echo**
 
-## Estrutura
+Antes de qualquer coisa, o verificador diz o que falta:
 
-| Caminho | O que é |
-|---|---|
-| `shared/protocol.py` | Assinatura HMAC dos comandos, compartilhada pelos dois lados |
-| `agent/` | Serviço que roda no PC: escuta MQTT e executa volume/power |
-| `lambda/` | Handler da Smart Home Skill v3 |
-| `tools/wol_test.py` | Teste isolado de Wake-on-LAN, sem Alexa e sem nuvem |
-| `tools/send_cmd.py` | Publica comandos assinados à mão, para testar o agente |
-| `tests/test_lambda.py` | Exercita o handler sem AWS, sem broker e sem Alexa |
-| `docs/setup-*.md` | Guias numerados de configuração do HiveMQ, da AWS e da skill |
-| `docs/tocar-musica.md` | Como a cena de música funciona e como ligá-la a uma rotina |
-| `docs/adicionar-funcionalidade.md` | Roteiro para estender o projeto depois de instalado |
-| `docs/problemas-encontrados.md` | Tudo que falhou até funcionar, indexado por sintoma |
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\check_requisitos.ps1
+```
 
-## Ordem de instalação
+Ele só lê o sistema. O que ele **não** consegue checar — BIOS, roteador e consoles web — está
+listado em [docs/requisitos-e-variacoes.md](docs/requisitos-e-variacoes.md), junto do que costuma
+diferir entre máquinas.
 
-Siga nesta ordem — cada etapa valida a anterior e evita depurar três camadas ao mesmo tempo.
+## Instalação
 
-1. **`docs/setup-wol.md`** — confirme que o PC acorda com um magic packet. Se falhar aqui,
-   nada mais importa.
-2. **`docs/setup-hivemq.md`** — crie o cluster e as duas credenciais separadas.
-3. **`docs/setup-agent.md`** — instale o agente e teste volume/desligar por MQTT manual.
-4. **`docs/setup-aws.md`** — publique o Lambda em `us-east-1`.
-5. **`docs/setup-alexa.md`** — crie a skill e faça o account linking.
+Cada etapa valida a anterior. Não pule a primeira: se o PC não acorda com um magic packet, nada
+mais importa.
+
+| # | Guia | O que resolve |
+|---|---|---|
+| 1 | [setup-wol.md](docs/setup-wol.md) | Confirmar que o PC acorda — sem Alexa, sem nuvem |
+| 2 | [setup-hivemq.md](docs/setup-hivemq.md) | Cluster MQTT e as duas credenciais separadas |
+| 3 | [setup-agent.md](docs/setup-agent.md) | Agente no PC, testado por comando manual |
+| 4 | [setup-aws.md](docs/setup-aws.md) | Lambda em `us-east-1` |
+| 5 | [setup-alexa.md](docs/setup-alexa.md) | Skill, account linking e `Send Alexa Events` |
+
+O lado local é automatizável:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\setup_local.ps1   # dependências, config, segredo
+powershell -ExecutionPolicy Bypass -File agent\install_task.ps1  # registra o serviço
+```
+
+O que exige navegador — HiveMQ, Login with Amazon e a skill — não tem como automatizar.
+
+## Ordem de leitura
+
+Depende do que você quer:
+
+**Vou instalar** → siga a tabela acima na ordem. Volte a
+[requisitos-e-variacoes.md](docs/requisitos-e-variacoes.md) se algo divergir da sua máquina.
+
+**Quero entender antes de instalar** → a seção de arquitetura acima, depois
+[CLAUDE.md](CLAUDE.md), que reúne as decisões de projeto e as restrições que parecem arbitrárias
+mas não são.
+
+**Travei em alguma coisa** → [problemas-encontrados.md](docs/problemas-encontrados.md), que é
+indexado por sintoma. Todo problema listado ali aconteceu de verdade durante a construção.
+
+**Quero estender** → [adicionar-funcionalidade.md](docs/adicionar-funcionalidade.md) traz o
+roteiro completo, incluindo os três pontos de implantação que falham em silêncio quando
+esquecidos.
+
+**Quero tocar mídia** → [tocar-musica.md](docs/tocar-musica.md) explica por que a Alexa não
+consegue mandar o áudio dela para o PC, e como fazer o PC tocar sozinho.
 
 ## Comandos de voz
 
@@ -77,7 +131,7 @@ Siga nesta ordem — cada etapa valida a anterior e evita depurar três camadas 
 | "Alexa, ligar o computador" | `PowerController.TurnOn` | A Echo transmite o magic packet |
 | "Alexa, desligar o computador" | `PowerController.TurnOff` | Desliga (S5), com janela de cancelamento |
 | "Alexa, ativar suspensão do computador" | `SceneController.Activate` | Suspende (S3) |
-| "Alexa, ativar música do computador" | `SceneController.Activate` | Abre a mídia configurada no agente |
+| "Alexa, ativar música do computador" | `SceneController.Activate` | Abre a mídia configurada |
 | "Alexa, colocar o volume do computador em 30" | `Speaker.SetVolume` | Volume absoluto, 0–100 |
 | "Alexa, aumentar o volume do computador em 20" | `Speaker.AdjustVolume` | Ajuste relativo |
 | "Alexa, silenciar o computador" | `Speaker.SetMute` | Mudo |
@@ -85,43 +139,45 @@ Siga nesta ordem — cada etapa valida a anterior e evita depurar três camadas 
 | "Alexa, anterior no computador" | `PlaybackController.Previous` | Volta a faixa (dois toques) |
 | "Alexa, recomeçar no computador" | `PlaybackController.StartOver` | Recomeça a faixa atual |
 
-Suspender e tocar música são endpoints separados, expostos como cenas, porque
-`PowerController` só tem dois estados e o "desligar" já ocupa um deles. Para frases mais
-curtas, crie Rotinas no app.
+Suspender e tocar música são endpoints separados, expostos como cenas, porque `PowerController`
+só tem dois estados e o "desligar" já ocupa um deles. Para frases mais curtas, crie Rotinas no
+app.
 
-A Alexa **não** consegue mandar o áudio dela para o PC — a cena de música faz o próprio PC
-abrir a mídia, e a Alexa serve só de gatilho. Detalhes em
-[docs/tocar-musica.md](docs/tocar-musica.md).
+## Estrutura
+
+| Caminho | O que é |
+|---|---|
+| `lambda/` | Handler da Smart Home Skill v3, um módulo por interface |
+| `agent/` | Serviço do PC: MQTT, volume (`pycaw`), energia e mídia |
+| `shared/protocol.py` | Assinatura HMAC e allowlist, compartilhados |
+| `tools/check_requisitos.ps1` | Diagnóstico do sistema — só lê, não altera |
+| `tools/setup_local.ps1` | Instala dependências, cria o config e gera o segredo |
+| `tools/wol_test.py` | Teste isolado de Wake-on-LAN, sem Alexa e sem nuvem |
+| `tools/send_cmd.py` | Publica comandos assinados à mão, para testar o agente |
+| `tests/test_lambda.py` | Exercita o handler sem AWS, sem broker e sem Alexa |
+| `docs/` | Guias de instalação, diagnóstico e extensão |
 
 ## Desenvolvimento e testes
 
 Os três testes rodam sem nuvem, sem broker e sem Alexa:
 
 ```powershell
-# Handler do Lambda: discovery, cada diretiva e os erros
-python tests\test_lambda.py
-
-# Wake-on-LAN isolado — rode de OUTRO dispositivo da rede
-python tools\wol_test.py 00-11-22-33-44-55
-
-# Agente: publica comandos assinados à mão (exige config.toml)
-python tools\send_cmd.py set_volume --percent 30
-python tools\send_cmd.py set_volume --percent 30 --tamper   # deve ser recusado
-python tools\send_cmd.py set_volume --percent 30 --stale    # deve ser recusado
+python tests\test_lambda.py                                  # handler do Lambda
+python tools\wol_test.py 00-11-22-33-44-55                   # WOL — rode de OUTRO dispositivo
+python tools\send_cmd.py set_volume --percent 30             # agente, por comando manual
+python tools\send_cmd.py set_volume --percent 30 --tamper    # deve ser recusado
+python tools\send_cmd.py set_volume --percent 30 --stale     # deve ser recusado
 ```
 
-Empacotar e publicar o Lambda:
+Publicar o Lambda:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File lambda\build.ps1          # só empacota
-powershell -ExecutionPolicy Bypass -File lambda\build.ps1 -Deploy  # empacota e sobe
+powershell -ExecutionPolicy Bypass -File lambda\build.ps1 -Deploy
 ```
 
-## Segurança
+⚠️ Ao mexer em `agent/` ou `shared/`, **reinicie o agente** — ele executa o código que estava em
+disco quando subiu:
 
-Os comandos são assinados com HMAC-SHA256 sobre `{action, params, ts, nonce}`. O agente recusa
-mensagem sem assinatura válida, com timestamp fora da janela de 30 segundos ou com nonce já
-usado. As ações são uma allowlist fixa — o agente nunca executa string arbitrária vinda da rede.
-
-Isso é defesa em profundidade: o HiveMQ já dá TLS, usuário/senha e ACL por tópico. A assinatura
-protege contra um broker comprometido ou credencial vazada.
+```powershell
+Stop-ScheduledTask -TaskName 'AlexaWOL Agent'; Start-ScheduledTask -TaskName 'AlexaWOL Agent'
+```
