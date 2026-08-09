@@ -19,3 +19,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# Payloads de teste gerados ao invocar o Lambda manualmente
+disc.json
+out*.json
