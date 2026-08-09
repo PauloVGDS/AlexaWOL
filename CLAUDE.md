@@ -29,6 +29,16 @@ powershell -ExecutionPolicy Bypass -File lambda\build.ps1 -Deploy
 aws logs tail /aws/lambda/alexawol --follow --region us-east-1
 ```
 
+**Ao mexer em `agent/` ou `shared/`, reinicie o agente** — ele executa o código que estava em
+disco quando subiu, então editar o arquivo não muda nada até o reinício. É a falha silenciosa
+mais comum aqui: o log do Lambda mostra tudo certo e o PC não reage.
+
+```powershell
+Stop-ScheduledTask -TaskName 'AlexaWOL Agent'; Start-ScheduledTask -TaskName 'AlexaWOL Agent'
+```
+
+O roteiro completo de extensão está em `docs/adicionar-funcionalidade.md`.
+
 `tests/test_lambda.py` é um script standalone, não pytest. Ele imprime uma linha `OK`/`FALHOU`
 por verificação e sai com código 1 se alguma falhar. Para rodar uma verificação isolada,
 comente as demais — não há seleção por nome.
