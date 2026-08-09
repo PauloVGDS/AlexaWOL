@@ -56,6 +56,7 @@ bem mais simples.
 | `tests/test_lambda.py` | Exercita o handler sem AWS, sem broker e sem Alexa |
 | `docs/setup-*.md` | Guias numerados de configuração do HiveMQ, da AWS e da skill |
 | `docs/tocar-musica.md` | Como a cena de música funciona e como ligá-la a uma rotina |
+| `docs/problemas-encontrados.md` | Tudo que falhou até funcionar, indexado por sintoma |
 
 ## Ordem de instalação
 
