@@ -84,6 +84,22 @@ Depois o handler do Lambda, isolado:
 python tests\test_lambda.py
 ```
 
+## ⚠️ Por voz direta, o nome colide
+
+**"Alexa, ativar música do computador" não funciona.** A Alexa toca música no próprio Echo.
+
+"Música" é palavra reservada: o intent nativo de reprodução tem prioridade sobre nomes de
+dispositivo, então a frase é capturada antes de chegar na cena. Testado — a cadeia técnica
+responde certo quando a cena é acionada diretamente; o que falha é o reconhecimento da frase.
+
+**Isso não afeta rotinas.** Dentro de uma rotina você escolhe o dispositivo numa lista, não por
+voz, então o nome nunca é falado e a colisão não existe. Para uma música fixa, essa é a forma
+de usar.
+
+Se um dia você quiser chamar por voz, renomeie a cena pela variável `MUSIC_FRIENDLY_NAME` do
+Lambda, evitando "música", "som", "tocar", "playlist" e "rádio" — todas disputam com intents
+nativos. Algo como "Trilha do computador" funciona.
+
 ## Montar a rotina
 
 1. App Alexa → **Mais → Rotinas** → abra a rotina que você já tem
