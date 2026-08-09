@@ -20,8 +20,11 @@ param(
 $ErrorActionPreference = 'Stop'
 $lambdaDir = $PSScriptRoot
 $repoRoot  = Split-Path $lambdaDir -Parent
-$buildDir  = Join-Path $lambdaDir 'build'
-$zipPath   = Join-Path $lambdaDir 'alexawol.zip'
+# Staging fora da arvore do projeto: se o repo estiver numa pasta sincronizada, o OneDrive
+# trava os arquivos que o pip acabou de escrever e o build seguinte falha com "Acesso negado".
+# De quebra, evita sincronizar dezenas de arquivos de dependencia sem motivo.
+$buildDir  = Join-Path $env:TEMP 'alexawol-build'
+$zipPath   = Join-Path $env:TEMP 'alexawol.zip'
 
 if (Test-Path $buildDir) { Remove-Item $buildDir -Recurse -Force }
 if (Test-Path $zipPath)  { Remove-Item $zipPath -Force }

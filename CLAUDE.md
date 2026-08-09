@@ -21,7 +21,7 @@ python tools\send_cmd.py set_volume --percent 30 --stale    # deve ser RECUSADO
 # Agente em primeiro plano, para ver o log
 python agent\alexawol_agent.py
 
-# Empacotar / publicar o Lambda
+# Empacotar / publicar o Lambda (staging em %TEMP%, fora da arvore do projeto)
 powershell -ExecutionPolicy Bypass -File lambda\build.ps1
 powershell -ExecutionPolicy Bypass -File lambda\build.ps1 -Deploy
 
@@ -126,6 +126,13 @@ O item 4 é o mais fácil de esquecer e o mais perigoso. Antes de existir a segu
 música entrou, ativá-la teria suspendido o PC. `tests/test_lambda.py` agora cobre isso
 verificando que cada cena publica a **sua** ação, e que endpoint desconhecido devolve
 `NO_SUCH_ENDPOINT` em vez de cair num padrão.
+
+**`PlaybackController` declara só `Next` e `Previous`.** Não é omissão: o Windows tem uma única
+tecla de play/pause, que alterna. A Alexa trata `Play` e `Pause` como operações distintas, então
+mapear as duas na mesma tecla faria "pausar" retomar a música já pausada. O handler recusa essas
+operações explicitamente em vez de deixá-las virar um "próxima faixa" silencioso. Suportá-las de
+verdade exige o SMTC do Windows (`GlobalSystemMediaTransportControlsSessionManager`), que também
+habilitaria o `Alexa.PlaybackStateReporter`.
 
 **A mídia da cena de música nunca trafega pela rede.** O comando é só o verbo `play_music`; o
 alvo vem de `[media].target` no `config.toml` do agente. Não mova isso para o payload — quem

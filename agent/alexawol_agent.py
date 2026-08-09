@@ -129,6 +129,10 @@ class Agent:
             power.abort()
         elif action == "play_music":
             media.play(self.cfg.get("media", {}).get("target", ""))
+        elif action == "media_next":
+            media.next_track()
+        elif action == "media_previous":
+            media.previous_track()
         elif action == "report":
             pass  # o publish_state do chamador já basta
         else:

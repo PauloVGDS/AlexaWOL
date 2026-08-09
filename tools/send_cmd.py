@@ -88,6 +88,8 @@ def main() -> None:
             "abort",
             "report",
             "play_music",
+            "media_next",
+            "media_previous",
         ],
     )
     parser.add_argument("--percent", type=int, default=30)

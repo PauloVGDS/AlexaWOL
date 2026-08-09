@@ -130,6 +130,32 @@ de fixar o número.
 `lambda/alexa/scene.py` e no `[media]` da config. Cresce linearmente; passando de umas poucas,
 vale repensar para um parâmetro em vez de um endpoint por faixa.
 
-**Pausar e continuar** — acrescentar `Alexa.PlaybackController` ao endpoint principal, mapeando
-para as teclas de mídia do Windows (`keybd_event` com `VK_MEDIA_PLAY_PAUSE`). Funciona com
-Spotify, YouTube e VLC de uma vez, porque todos respondem às teclas de mídia.
+**Pausar e continuar** — ver a seção abaixo: exige o SMTC do Windows, ao custo de uma
+dependência WinRT.
+
+## Avançar e voltar faixa
+
+Implementado via `Alexa.PlaybackController` no endpoint principal:
+
+- "Alexa, próxima no computador"
+- "Alexa, anterior no computador"
+
+O agente emite as teclas de mídia do Windows (`VK_MEDIA_NEXT_TRACK` e `VK_MEDIA_PREV_TRACK`)
+com `keybd_event`. Isso funciona com Spotify, YouTube e VLC de uma vez, porque todos registram
+o atalho global — não há integração com player nenhum.
+
+### Por que não tem "pausar" e "continuar"
+
+O Windows tem **uma única tecla** de play/pause (`VK_MEDIA_PLAY_PAUSE`), que **alterna**. Não
+existem teclas separadas.
+
+A Alexa, por outro lado, trata `Play` e `Pause` como operações distintas. Mapear as duas na
+mesma tecla produziria o comportamento errado na cara: dizer "pausar" com a música já pausada
+faria ela **voltar a tocar**. Por isso o `supportedOperations` declara só `Next` e `Previous`
+— e o handler recusa `Play`/`Pause` explicitamente, em vez de deixar virar um "próxima faixa"
+silencioso.
+
+Fazer isso direito exige o **SMTC** do Windows
+(`GlobalSystemMediaTransportControlsSessionManager`), que tem `TryPlayAsync` e `TryPauseAsync`
+explícitos e ainda informa o estado atual — o que permitiria implementar também o
+`Alexa.PlaybackStateReporter`. O custo é uma dependência WinRT e código assíncrono.

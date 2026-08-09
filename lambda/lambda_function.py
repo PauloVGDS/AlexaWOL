@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import logging
 
-from alexa import auth, discovery, power, scene, speaker, state
+from alexa import auth, discovery, playback, power, scene, speaker, state
 from alexa.util import error_response
 
 log = logging.getLogger()
@@ -37,6 +37,9 @@ def _route(directive: dict) -> dict:
 
     if namespace == "Alexa.SceneController":
         return scene.handle(directive)
+
+    if namespace == "Alexa.PlaybackController":
+        return playback.handle(directive)
 
     return error_response(
         directive, "INVALID_DIRECTIVE", f"diretiva não suportada: {namespace}.{name}"

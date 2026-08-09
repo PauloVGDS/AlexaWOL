@@ -50,11 +50,12 @@ FAKE_STATE = {"online": True, "volume": 45, "muted": False}
 mqtt_client.publish_command = lambda action, params=None: published.append((action, params or {}))
 mqtt_client.read_state = lambda timeout=None: FAKE_STATE
 
-from alexa import events, power, speaker, state  # noqa: E402
+from alexa import events, playback, power, speaker, state  # noqa: E402
 
 power.mqtt_client = mqtt_client
 speaker.mqtt_client = mqtt_client
 state.mqtt_client = mqtt_client
+playback.mqtt_client = mqtt_client
 events.send_wake_up = lambda endpoint_id, token: wake_ups.append((endpoint_id, token))
 power.events = events
 
@@ -106,6 +107,9 @@ check("categoria COMPUTER", pc["displayCategories"] == ["COMPUTER"])
 check("tem PowerController", "Alexa.PowerController" in interfaces)
 check("tem Speaker", "Alexa.Speaker" in interfaces)
 check("tem WakeOnLANController", "Alexa.WakeOnLANController" in interfaces)
+check("tem PlaybackController", "Alexa.PlaybackController" in interfaces)
+ops = interfaces.get("Alexa.PlaybackController", {}).get("supportedOperations")
+check("declara so Next e Previous", ops == ["Next", "Previous"], f"({ops})")
 mac = interfaces.get("Alexa.WakeOnLANController", {}).get("configuration", {}).get("MACAddresses")
 check("MAC no formato com hifen", mac == ["00-11-22-33-44-55"], f"({mac})")
 for index, label in ((1, "suspender"), (2, "musica")):
@@ -187,6 +191,29 @@ check(
     res["event"]["payload"]["type"] == "NO_SUCH_ENDPOINT",
 )
 
+print("PlaybackController:")
+published.clear()
+res = lambda_function.lambda_handler(
+    directive("Alexa.PlaybackController", "Next", endpoint="alexawol-pc"), None
+)
+check("Next publica media_next", published == [("media_next", {})], f"({published})")
+check("responde Response", res["event"]["header"]["name"] == "Response")
+
+published.clear()
+res = lambda_function.lambda_handler(
+    directive("Alexa.PlaybackController", "Previous", endpoint="alexawol-pc"), None
+)
+check("Previous publica media_previous", published == [("media_previous", {})], f"({published})")
+
+# Play/Pause nao sao declarados porque a tecla do Windows e um toggle. Se a Alexa mandar
+# assim mesmo, tem que ser recusado em vez de virar um "proxima faixa" silencioso.
+published.clear()
+res = lambda_function.lambda_handler(
+    directive("Alexa.PlaybackController", "Pause", endpoint="alexawol-pc"), None
+)
+check("Pause nao publica nada", published == [], f"({published})")
+check("Pause devolve ErrorResponse", res["event"]["header"]["name"] == "ErrorResponse")
+
 print("ReportState:")
 res = lambda_function.lambda_handler(directive("Alexa", "ReportState", endpoint="alexawol-pc"), None)
 check("nome StateReport", res["event"]["header"]["name"] == "StateReport")
@@ -196,6 +223,7 @@ check("reporta volume 45", prop_value(res, "Alexa.Speaker", "volume") == 45)
 original = mqtt_client.read_state
 mqtt_client.read_state = lambda timeout=None: None
 state.mqtt_client = mqtt_client
+playback.mqtt_client = mqtt_client
 res = lambda_function.lambda_handler(directive("Alexa", "ReportState", endpoint="alexawol-pc"), None)
 check("powerState OFF sem retained", prop_value(res, "Alexa.PowerController", "powerState") == "OFF")
 check(
@@ -204,6 +232,7 @@ check(
 )
 mqtt_client.read_state = original
 state.mqtt_client = mqtt_client
+playback.mqtt_client = mqtt_client
 
 print("Diretiva desconhecida:")
 res = lambda_function.lambda_handler(directive("Alexa.ThermostatController", "SetTargetTemperature"), None)

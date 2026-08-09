@@ -41,6 +41,12 @@ def _computer_endpoint() -> dict:
                 configuration={"MACAddresses": [config.PC_MAC]},
             ),
             _capability("Alexa.Speaker", ["volume", "muted"]),
+            # Só Next e Previous: o Windows tem uma única tecla que alterna play/pause, e
+            # declarar as duas operações nela faria "pausar" retomar a música já pausada.
+            _capability(
+                "Alexa.PlaybackController",
+                supportedOperations=["Next", "Previous"],
+            ),
             _capability("Alexa.EndpointHealth", ["connectivity"]),
         ],
     }
