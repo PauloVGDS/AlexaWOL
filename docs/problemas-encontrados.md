@@ -23,6 +23,9 @@ correção.
 | `send_cmd.py` publica "com sucesso" e o agente não recebe | ACL do broker recusa — credencial errada | [Nossos bugs](#bugs-nossos) |
 | "Alexa, ativar música do computador" toca no Echo | "Música" colide com intent nativo | [Alexa](#o-console-da-alexa) |
 | `AttributeError: 'AudioDevice' object has no attribute 'Activate'` | API do pycaw mudou | [Windows](#windows) |
+| Agente "Running" na tarefa, mas nada funciona | Dependência faltando — falha invisível sem console | [Windows](#windows) |
+| Valores no app aparecem com "Por cento" | `unitOfMeasure` renderiza a unidade como palavra | [App](#o-app-da-alexa) |
+| Agente consumindo mais CPU do que o esperado | Leitura da GPU, não o agente | [App](#o-app-da-alexa) |
 
 ---
 
@@ -78,6 +81,28 @@ o volume.
 
 A tarefa agendada roda na sessão do usuário, com gatilho de logon. Não é limitação prática:
 ao acordar do S3 a sessão continua viva mesmo bloqueada, e o "ligar" nunca depende do agente.
+
+### Dependência faltando derruba o agente em silêncio
+
+**Sintoma:** a tarefa agendada aparece como `Running`, mas nenhum comando funciona.
+
+O agente roda por `pythonw.exe`, **sem console**. Um `ModuleNotFoundError` na importação mata o
+processo sem deixar rastro visível: a tarefa mostra "Running" por um instante e o processo
+morre. Nada aparece em lugar nenhum.
+
+Hoje são obrigatórios `paho-mqtt`, `pycaw`, `comtypes` e `psutil` — este último entrou junto com
+as métricas do card e é importado no topo de `actions/system.py`. Os pacotes `winrt` são a
+exceção: sem eles o agente sobe e cai nas teclas de mídia, perdendo só o play/pause.
+
+`tools\check_requisitos.ps1` verifica todos. Rode-o sempre que "o agente parece rodando mas não
+faz nada".
+
+Para ver o erro de verdade, rode em primeiro plano:
+
+```powershell
+Stop-ScheduledTask -TaskName 'AlexaWOL Agent'
+python agent\alexawol_agent.py
+```
 
 ### Suspender é S3 de verdade, ao contrário do que se diz
 
@@ -256,6 +281,55 @@ toggle. Não há sequência linear — a ordem em `setup-aws.md` minimiza as ida
 as elimina.
 
 ---
+
+## O app da Alexa
+
+O card do dispositivo é bem menos maleável do que parece. Quatro limitações descobertas ao
+montar os mostradores de métricas.
+
+### `unitOfMeasure` vira palavra, não símbolo
+
+**Sintoma:** os valores aparecem como "34 Por cento" em vez de "34%".
+
+O catálogo da Amazon só tem `Alexa.Unit.Percent`, e o app o renderiza como a palavra traduzida.
+**Não existe asset para gigabytes** nem para tempo. A saída é omitir `unitOfMeasure` e pôr a
+unidade no próprio nome — "Memória usada em gigabytes".
+
+### Nomes de capability são alvos de voz
+
+Por isso nada de `%`, `(GB)` ou outros símbolos: a pessoa pode perguntar *"Alexa, qual é o uso
+do processador do computador?"*, então o nome precisa ser pronunciável. A documentação não lista
+os caracteres proibidos, mas todos os exemplos são texto simples — e um nome rejeitado na
+validação faz **o endpoint inteiro sumir do discovery**, o que é um preço alto por um símbolo.
+
+### Não existe cabeçalho de seção
+
+O app renderiza um controle por capability e o nome amigável **é** o rótulo. Não há como
+declarar um título agrupador dentro do card. O agrupamento possível é por vizinhança — a ordem
+do Discovery é respeitada — e por prefixo comum no nome.
+
+O único conceito de grupo do ecossistema é o de dispositivos, criado pelo usuário no app. Quem
+quiser títulos de verdade precisa quebrar em endpoints separados, ao custo de mais cards na
+lista.
+
+### Capacidade nova não gera "dispositivo novo"
+
+Acrescentar uma capability a um endpoint que já existe faz a descoberta dizer que **nada novo
+foi encontrado** — e está certo, porque nenhum dispositivo novo apareceu. O que mudou foi o que
+o dispositivo sabe fazer, e o app não anuncia isso. Confira pelo log do Lambda que o `Discover`
+chegou e veja a resposta.
+
+### O custo escondido: 98% do consumo do agente era a GPU
+
+Medido com `tools\medir_agente.py`, numa janela de 100 s: o processo consumia 0,08 s de CPU e
+os subprocessos, 4,70 s. Toda a diferença era o PowerShell disparado para ler o contador de uso
+da placa de vídeo, a cada ciclo de estado.
+
+A lição vale além deste projeto: **medir só o processo esconde o custo**, porque o subprocesso
+nasce e morre entre amostras. O `medir_agente.py` separa os dois justamente por isso.
+
+A correção foi desacoplar a frequência — o estado continua a cada 30 s, a GPU passou a 2
+minutos, e o consumo caiu de 4,78% para 1,88% de um núcleo.
 
 ## Bugs nossos
 

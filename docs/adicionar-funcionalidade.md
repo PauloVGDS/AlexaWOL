@@ -89,6 +89,21 @@ O item 3 é o mais fácil de esquecer e o mais perigoso. Antes de existir a segu
 `scene.py` publicava `suspend` incondicionalmente e passava nos testes — quando a cena de
 música entrou, ativá-la teria **suspendido o PC**, com o Lambda respondendo sucesso.
 
+### B2. Dependência nova no agente
+
+Se a sua ação precisa de um pacote novo, são **três** lugares, não um:
+
+1. `agent/requirements.txt` — a declaração
+2. `tools/check_requisitos.ps1` — o verificador, se o pacote for **obrigatório**
+3. `docs/requisitos-e-variacoes.md` — se mudar o que o usuário precisa saber
+
+O item 2 não é burocracia. O agente roda por `pythonw`, sem console: um `ModuleNotFoundError`
+mata o processo em silêncio, a tarefa mostra "Running" por um instante e nada funciona, sem
+erro em lugar nenhum. Foi o que quase aconteceu quando o `psutil` entrou.
+
+Se o pacote for **opcional** — como os `winrt`, cuja ausência só faz o play/pause deixar de
+existir —, o verificador deve reportar aviso e não falha, e o código precisa degradar sozinho.
+
 ### C. Interface nova da Alexa
 
 Exemplo: o `PlaybackController`.
@@ -101,10 +116,15 @@ Exemplo: o `PlaybackController`.
 5. Passos de (A) para o lado do agente
 6. Testes
 
-**Declare só o que você implementa de verdade.** O `PlaybackController` suporta oito
-operações; declaramos duas. Declarar `Play` e `Pause` mapeando na tecla de alternância do
-Windows faria "pausar" retomar a música já pausada — pior que não existir. O handler recusa
-explicitamente o que não declara, para não virar comportamento errado silencioso.
+**Declare só o que você implementa de verdade.** O `PlaybackController` suporta oito operações;
+declaramos cinco. O handler recusa explicitamente o que não declara, em vez de deixar virar
+comportamento errado silencioso.
+
+**Se for um mostrador e não um controle**, use `RangeController` com `nonControllable: true` e
+registre a métrica em `lambda/alexa/metrics.py`, que é fonte única para o discovery e para o
+report. Duas armadilhas do app estão em [problemas-encontrados.md](problemas-encontrados.md):
+`unitOfMeasure` vira palavra em vez de símbolo, e nomes de capability precisam ser
+pronunciáveis porque também são alvos de voz.
 
 ## O ciclo de implantação
 

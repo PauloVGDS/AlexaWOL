@@ -164,6 +164,40 @@ python -c "from pycaw.pycaw import AudioUtilities; print(AudioUtilities.GetSpeak
 **Sem nenhum dispositivo de áudio ativo, o agente falha ao ler o estado.** Acontece em máquinas
 sem placa de som habilitada, em sessões RDP e em alguns servidores.
 
+### O que o agente instala, e o que acontece sem cada coisa
+
+`tools\setup_local.ps1` cuida disso a partir do `agent\requirements.txt`. Vale saber o papel de
+cada pacote, porque a consequência de faltar é bem diferente:
+
+| Pacote | Se faltar |
+|---|---|
+| `paho-mqtt` | **O agente não inicia** |
+| `pycaw` + `comtypes` | **Não inicia** — são o controle de volume |
+| `psutil` | **Não inicia** — as métricas do card o importam no topo |
+| `winrt-Windows.Media[.Control]` | Inicia normalmente; perde só "continuar" e "pausar", caindo nas teclas de mídia |
+
+Os três primeiros são obrigatórios e o verificador trata a ausência como falha. Os `winrt` são
+opcionais e viram aviso.
+
+Isso importa porque o agente roda por `pythonw`, **sem console**: uma importação que falha mata
+o processo em silêncio, a tarefa mostra "Running" por um instante e nada funciona, sem erro
+visível em lugar nenhum.
+
+### As métricas do card
+
+Tempo ligado, processador, placa de vídeo, memória e disco vêm do `psutil`, exceto o uso da GPU,
+que vem do contador de desempenho do Windows — e por isso serve para qualquer fabricante, sem
+depender de `nvidia-smi` nem do driver AMD.
+
+**Temperatura não é exposta.** O Windows não a entrega de forma confiável: o
+`MSAcpi_ThermalZoneTemperature` responde "operação não suportada" na maioria dos desktops, não há
+`Win32_TemperatureProbe`, e placas AMD não têm equivalente ao `nvidia-smi`. A única fonte seria o
+LibreHardwareMonitor rodando o tempo todo, e exigir um aplicativo extra permanente não compensa.
+
+O custo do agente é dominado pela leitura da GPU — ver a medição no
+[README](../README.md#quanto-o-agente-custa). Se você quiser custo praticamente zero, remova a
+entrada `PC.GPU` de `lambda/alexa/metrics.py` e a leitura correspondente no agente.
+
 ### A versão do pycaw importa
 
 A API mudou. Versões anteriores a `20251023` usavam `speakers.Activate(...)`, que não existe

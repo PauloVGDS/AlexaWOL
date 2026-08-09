@@ -42,6 +42,11 @@ A seção `[media]` é opcional — só é usada pela cena "Música do computado
 usá-la, deixe `target = ""`; o comando simplesmente falha com mensagem clara no log, sem
 derrubar o agente. Ver [tocar-musica.md](tocar-musica.md).
 
+O `pip install` traz seis pacotes: `paho-mqtt`, `pycaw` e `comtypes` (obrigatórios, o agente
+não inicia sem eles), `psutil` (também obrigatório, alimenta as métricas do card) e os dois
+`winrt`, que são opcionais e servem ao "continuar"/"pausar". A tabela com o efeito de cada
+ausência está em [requisitos-e-variacoes.md](requisitos-e-variacoes.md).
+
 ## Testar antes de instalar como serviço
 
 Antes: preencha `[publisher]` no `config.toml` com a credencial do **Lambda**
