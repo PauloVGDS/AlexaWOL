@@ -106,7 +106,7 @@ valores que têm espaço (`Suspensão do computador`) e com quebras de linha, e 
 produz não deixa claro qual variável causou o problema.
 
 ```powershell
-@'
+$vars = @'
 {
   "Variables": {
     "PC_MAC": "00-11-22-33-44-55",
@@ -122,7 +122,10 @@ produz não deixa claro qual variável causou o problema.
     "LWA_CLIENT_SECRET": "amzn1.oa2-cs.v1.xxxx"
   }
 }
-'@ | Out-File -Encoding utf8 env.json
+'@
+
+# UTF-8 sem BOM, explicitamente. NÃO troque por `Out-File -Encoding utf8`: veja abaixo.
+[System.IO.File]::WriteAllText("$PWD\env.json", $vars, (New-Object System.Text.UTF8Encoding $false))
 
 aws lambda update-function-configuration `
     --function-name alexawol --region us-east-1 `
@@ -131,7 +134,12 @@ aws lambda update-function-configuration `
 Remove-Item env.json   # contém segredos; não deixe na pasta
 ```
 
-O `-Encoding utf8` importa por causa dos acentos em "Suspensão" e "Música".
+**Por que a escrita é assim e não `Out-File -Encoding utf8`.** No Windows PowerShell 5.1,
+`-Encoding utf8` grava um BOM (`EF BB BF`) no começo do arquivo, e a AWS CLI rejeita o JSON com
+`Unexpected UTF-8 BOM`. No PowerShell 7 o mesmo comando grava sem BOM, então o erro só aparece
+para quem roda no 5.1 — e ambos costumam estar instalados na mesma máquina, o que torna a falha
+intermitente conforme o terminal usado. O `UTF8Encoding $false` se comporta igual nas duas
+versões. O UTF-8 em si é necessário por causa dos acentos em "Suspensão" e "Música".
 
 **Cole os valores do LWA por inteiro.** O `LWA_CLIENT_SECRET` vem no formato
 `amzn1.oa2-cs.v1.` seguido de uma string hexadecimal — o prefixo faz parte do segredo, não é
