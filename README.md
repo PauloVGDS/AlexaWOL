@@ -168,17 +168,24 @@ app.
 Além do interruptor, o card do computador mostra métricas em leitura apenas — e dá para
 perguntá-las por voz, tipo *"Alexa, qual é o uso do processador do computador?"*:
 
-| Métrica | Fonte | Disponibilidade |
-|---|---|---|
-| Tempo ligado | `psutil.boot_time()` | sempre |
-| Uso do processador | psutil | sempre |
-| Uso de memória | psutil | sempre |
-| Espaço livre em disco | psutil | sempre |
-| Uso da placa de vídeo | contador de desempenho do Windows | sempre — **qualquer fabricante** |
+| Métrica | Fonte |
+|---|---|
+| Tempo ligado em minutos | `psutil.boot_time()` |
+| Uso do processador | psutil |
+| Uso da placa de vídeo | contador de desempenho do Windows — **qualquer fabricante** |
+| Memória usada / total em gigabytes | psutil |
+| Disco usado / total em gigabytes | psutil |
 
 São instâncias de `Alexa.RangeController` com `nonControllable: true`, o que faz o app exibir o
 valor sem oferecer controle. Com o PC desligado nenhuma métrica é reportada — mostrar zero
 seria mentira.
+
+**A unidade vai no nome, não em `unitOfMeasure`.** O catálogo da Amazon só tem
+`Alexa.Unit.Percent`, que o app renderiza como a palavra "Por cento", e não existe asset para
+gigabytes. Pôr a unidade no próprio nome resolve os dois casos e ainda funciona por voz.
+
+Os nomes também são alvos de voz, então evitam caracteres não pronunciáveis — é por isso que
+está "em gigabytes" e não "(GB)", e por isso o "%" não aparece como símbolo.
 
 **Temperatura ficou de fora de propósito.** O Windows não a expõe de forma confiável: o WMI
 responde "operação não suportada" na maioria dos desktops e placas AMD não têm equivalente ao

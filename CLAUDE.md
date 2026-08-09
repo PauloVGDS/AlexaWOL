@@ -150,6 +150,11 @@ justamente porque são intenções diferentes — unificar quebraria uma delas.
 As chamadas `try_*_async` **devolvem um booleano**. Ignorá-lo faz uma recusa do player passar
 por sucesso e o plano B nunca ser tentado; `_executar_smtc` propaga esse retorno de propósito.
 
+**Nenhuma métrica declara `unitOfMeasure`, e isso é deliberado.** O único asset aplicável seria
+`Alexa.Unit.Percent`, que o app da Alexa renderiza como a palavra "Por cento" em pt-BR, e não
+existe asset para gigabytes. A unidade vai no nome ("Memória usada em gigabytes"). Os nomes são
+também alvos de voz, então nada de "%" ou "(GB)" — precisam ser pronunciáveis.
+
 **`alexa/metrics.py` é fonte única de verdade.** O `discovery.py` monta as capabilities e o
 `state.py` monta as propriedades a partir da mesma tupla. Definir nos dois lugares repetiria o
 erro que o `scene.py` cometeu, em que uma lista e um mapa saíram de sincronia. Métrica nova é

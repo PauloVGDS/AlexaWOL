@@ -46,7 +46,9 @@ from bridge import mqtt_client  # noqa: E402
 published: list[tuple[str, dict]] = []
 wake_ups: list[tuple[str, str]] = []
 FAKE_STATE = {"online": True, "volume": 45, "muted": False,
-              "uptime_min": 137, "cpu_pct": 12, "ram_pct": 34, "disco_livre_pct": 6}
+              "uptime_min": 137, "cpu_pct": 12, "gpu_pct": 9,
+              "ram_usada_gb": 11, "ram_total_gb": 32,
+              "disco_usado_gb": 937, "disco_total_gb": 999}
 
 mqtt_client.publish_command = lambda action, params=None: published.append((action, params or {}))
 mqtt_client.read_state = lambda timeout=None: FAKE_STATE
@@ -110,9 +112,13 @@ check("tem Speaker", "Alexa.Speaker" in interfaces)
 check("tem WakeOnLANController", "Alexa.WakeOnLANController" in interfaces)
 check("tem PlaybackController", "Alexa.PlaybackController" in interfaces)
 faixas = [c for c in pc["capabilities"] if c["interface"] == "Alexa.RangeController"]
-check("declara 5 metricas", len(faixas) == 5, f"({len(faixas)})")
+check("declara 7 metricas", len(faixas) == 7, f"({len(faixas)})")
 check("metricas sao nonControllable", all(f["properties"]["nonControllable"] for f in faixas))
-check("cada metrica tem instance unico", len({f["instance"] for f in faixas}) == 5)
+check("cada metrica tem instance unico", len({f["instance"] for f in faixas}) == 7)
+check("nenhuma metrica usa unitOfMeasure", not any("unitOfMeasure" in f["configuration"] for f in faixas))
+check("nomes comecam com maiuscula", all(
+    n["value"]["text"][0].isupper()
+    for f in faixas for n in f["capabilityResources"]["friendlyNames"]))
 check("metricas tem nome em pt-BR", all(
     any(n["value"].get("locale") == "pt-BR" for n in f["capabilityResources"]["friendlyNames"])
     for f in faixas))
@@ -253,7 +259,9 @@ def range_value(result, instance):
             return item["value"]
     return None
 
-for inst, esperado in (("PC.Uptime", 137), ("PC.CPU", 12), ("PC.RAM", 34), ("PC.Disk", 6)):
+for inst, esperado in (("PC.Uptime", 137), ("PC.CPU", 12), ("PC.GPU", 9),
+                       ("PC.RAMUsada", 11), ("PC.RAMTotal", 32),
+                       ("PC.DiscoUsado", 937), ("PC.DiscoTotal", 999)):
     check(f"reporta {inst}", range_value(res, inst) == esperado, f"({range_value(res, inst)})")
 
 original = mqtt_client.read_state

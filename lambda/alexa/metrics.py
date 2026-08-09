@@ -16,48 +16,60 @@ METRICAS = (
     {
         "instance": "PC.Uptime",
         "campo": "uptime_min",
-        "nomes": {"pt-BR": "tempo ligado", "en-US": "uptime"},
+        "nomes": {"pt-BR": "Tempo ligado em minutos", "en-US": "Uptime in minutes"},
         "minimo": 0,
-        "maximo": 43200,  # 30 dias em minutos
-        "unidade": None,
+        "maximo": 43200,  # 30 dias
     },
     {
         "instance": "PC.CPU",
         "campo": "cpu_pct",
-        "nomes": {"pt-BR": "uso do processador", "en-US": "CPU usage"},
+        "nomes": {"pt-BR": "Uso do processador", "en-US": "CPU usage"},
         "minimo": 0,
         "maximo": 100,
-        "unidade": "Alexa.Unit.Percent",
-    },
-    {
-        "instance": "PC.RAM",
-        "campo": "ram_pct",
-        "nomes": {"pt-BR": "uso de memória", "en-US": "memory usage"},
-        "minimo": 0,
-        "maximo": 100,
-        "unidade": "Alexa.Unit.Percent",
-    },
-    {
-        "instance": "PC.Disk",
-        "campo": "disco_livre_pct",
-        "nomes": {"pt-BR": "espaço livre em disco", "en-US": "free disk space"},
-        "minimo": 0,
-        "maximo": 100,
-        "unidade": "Alexa.Unit.Percent",
     },
     {
         "instance": "PC.GPU",
         "campo": "gpu_pct",
-        "nomes": {"pt-BR": "uso da placa de vídeo", "en-US": "GPU usage"},
+        "nomes": {"pt-BR": "Uso da placa de vídeo", "en-US": "GPU usage"},
         "minimo": 0,
         "maximo": 100,
-        "unidade": "Alexa.Unit.Percent",
+    },
+    {
+        "instance": "PC.RAMUsada",
+        "campo": "ram_usada_gb",
+        "nomes": {"pt-BR": "Memória usada em gigabytes", "en-US": "Memory used in gigabytes"},
+        "minimo": 0,
+        "maximo": 1024,
+    },
+    {
+        "instance": "PC.RAMTotal",
+        "campo": "ram_total_gb",
+        "nomes": {"pt-BR": "Memória total em gigabytes", "en-US": "Total memory in gigabytes"},
+        "minimo": 0,
+        "maximo": 1024,
+    },
+    {
+        "instance": "PC.DiscoUsado",
+        "campo": "disco_usado_gb",
+        "nomes": {"pt-BR": "Disco usado em gigabytes", "en-US": "Disk used in gigabytes"},
+        "minimo": 0,
+        "maximo": 65536,
+    },
+    {
+        "instance": "PC.DiscoTotal",
+        "campo": "disco_total_gb",
+        "nomes": {"pt-BR": "Disco total em gigabytes", "en-US": "Total disk in gigabytes"},
+        "minimo": 0,
+        "maximo": 65536,
     },
 )
 
 
 def capability(metrica: dict) -> dict:
     """Capability de Discovery para uma métrica."""
+    # Sem unitOfMeasure de propósito. O único asset aplicável seria Alexa.Unit.Percent, que
+    # o app renderiza como a palavra "Por cento" — e não existe asset para gigabytes. A
+    # unidade vai no próprio nome, onde ela é lida com naturalidade e também funciona por voz.
     configuracao: dict = {
         "supportedRange": {
             "minimumValue": metrica["minimo"],
@@ -65,8 +77,6 @@ def capability(metrica: dict) -> dict:
             "precision": 1,
         }
     }
-    if metrica["unidade"]:
-        configuracao["unitOfMeasure"] = metrica["unidade"]
 
     return {
         "type": "AlexaInterface",

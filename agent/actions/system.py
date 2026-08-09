@@ -62,14 +62,30 @@ def cpu_percentual() -> int:
     return round(psutil.cpu_percent(interval=None))
 
 
-def memoria_percentual() -> int:
-    return round(psutil.virtual_memory().percent)
+def _gb(bytes_: int) -> int:
+    """Bytes para gigabytes, como os fabricantes contam (1 GB = 10^9)."""
+    return round(bytes_ / 1_000_000_000)
 
 
-def disco_livre_percentual() -> int:
-    """Percentual LIVRE no disco do sistema — o número que interessa num alerta."""
+def memoria_usada_gb() -> int:
+    return _gb(psutil.virtual_memory().used)
+
+
+def memoria_total_gb() -> int:
+    return _gb(psutil.virtual_memory().total)
+
+
+def _disco():
     raiz = os.environ.get("SystemDrive", "C:") + os.sep
-    return round(100 - psutil.disk_usage(raiz).percent)
+    return psutil.disk_usage(raiz)
+
+
+def disco_usado_gb() -> int:
+    return _gb(_disco().used)
+
+
+def disco_total_gb() -> int:
+    return _gb(_disco().total)
 
 
 # ---------------------------------------------------------------- GPU
@@ -118,9 +134,11 @@ def metricas() -> dict:
     for nome, funcao in (
         ("uptime_min", uptime_minutos),
         ("cpu_pct", cpu_percentual),
-        ("ram_pct", memoria_percentual),
-        ("disco_livre_pct", disco_livre_percentual),
         ("gpu_pct", gpu_percentual),
+        ("ram_usada_gb", memoria_usada_gb),
+        ("ram_total_gb", memoria_total_gb),
+        ("disco_usado_gb", disco_usado_gb),
+        ("disco_total_gb", disco_total_gb),
     ):
         try:
             valor = funcao()
