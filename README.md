@@ -87,23 +87,33 @@ diferir entre máquinas.
 
 ## Instalação
 
-Cada etapa valida a anterior. Não pule a primeira: se o PC não acorda com um magic packet, nada
-mais importa.
+Reserve algo entre uma e duas horas. A maior parte é preencher formulário em console web; o
+código já está pronto.
+
+**Parte local — linear, cada etapa valida a anterior.**
 
 | # | Guia | O que resolve |
 |---|---|---|
-| 1 | [setup-wol.md](docs/setup-wol.md) | Confirmar que o PC acorda — sem Alexa, sem nuvem |
+| 1 | [setup-wol.md](docs/setup-wol.md) | **BIOS** e confirmar que o PC acorda — sem Alexa, sem nuvem |
 | 2 | [setup-hivemq.md](docs/setup-hivemq.md) | Cluster MQTT e as duas credenciais separadas |
 | 3 | [setup-agent.md](docs/setup-agent.md) | Agente no PC, testado por comando manual |
-| 4 | [setup-aws.md](docs/setup-aws.md) | Lambda em `us-east-1` |
-| 5 | [setup-alexa.md](docs/setup-alexa.md) | Skill, account linking e `Send Alexa Events` |
 
-O lado local é automatizável — sempre num terminal **como Administrador**:
+Não pule a primeira: se o PC não acorda com um magic packet, nada mais importa. E o BIOS é
+requisito, não sugestão — a configuração de fábrica da maioria das placas impede o WOL a partir
+do desligamento.
+
+O passo 3 é quase todo automatizável, num terminal **como Administrador**:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\setup_local.ps1   # dependências, config, segredo
+# preencha as credenciais do HiveMQ no config.toml que ele criou
 powershell -ExecutionPolicy Bypass -File agent\install_task.ps1  # registra o serviço
 ```
+
+**Parte na nuvem — não é linear.** A AWS precisa do Skill ID e a skill precisa do ARN do
+Lambda, então [setup-aws.md](docs/setup-aws.md) e [setup-alexa.md](docs/setup-alexa.md) se
+entrelaçam. Comece pelo [setup-aws.md](docs/setup-aws.md), que abre com a sequência de oito
+passos que minimiza as idas e vindas entre os dois consoles.
 
 O que exige navegador — HiveMQ, Login with Amazon e a skill — não tem como automatizar.
 

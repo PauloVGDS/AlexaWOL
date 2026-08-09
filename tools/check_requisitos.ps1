@@ -88,6 +88,22 @@ if (-not $py) {
     } else {
         Resultado falha 'nao consegui ler o volume' 'pycaw antigo (<20251023) ou nenhum dispositivo de audio ativo'
     }
+
+    # SMTC — necessario para "continuar" e "pausar". Sem ele o resto do projeto funciona.
+    & python -c "from winrt.windows.media.control import GlobalSystemMediaTransportControlsSessionManager" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Resultado aviso 'SMTC indisponivel' 'sem winrt-Windows.Media.Control: play/pause por voz nao funcionam (avancar e voltar sim)'
+    } else {
+        $sess = & python -c "
+import asyncio
+from winrt.windows.media.control import GlobalSystemMediaTransportControlsSessionManager as M
+async def go():
+    s = (await M.request_async()).get_current_session()
+    print(s.source_app_user_model_id if s else '')
+asyncio.run(go())" 2>$null
+        if ($sess) { Resultado ok 'SMTC disponivel' "sessao de midia ativa: $sess" }
+        else { Resultado ok 'SMTC disponivel' 'nenhuma midia tocando agora — normal' }
+    }
 }
 
 # ---------------------------------------------------------------- Rede local
