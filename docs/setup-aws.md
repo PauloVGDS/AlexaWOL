@@ -14,13 +14,17 @@ Este passo e o seguinte se entrelaçam: a AWS precisa do Skill ID, e a skill pre
 Lambda. Não dá para fazer linear. Esta sequência minimiza as idas e vindas:
 
 1. **Perfil Login with Amazon** ([setup-alexa.md](setup-alexa.md), passo 5.2) — leva 5 minutos
-   e não depende de nada. Fazendo primeiro, você já tem o `LWA_CLIENT_ID` e o
-   `LWA_CLIENT_SECRET` em mãos.
+   e não depende de nada. Serve ao account linking, não às variáveis do Lambda.
 2. **4.1 e 4.2 aqui** — papel IAM e criação da função. Guarde o `FunctionArn`.
-3. **4.3 aqui** — variáveis de ambiente, agora completas.
-4. **Skill** ([setup-alexa.md](setup-alexa.md), passo 5.1) — aponte para o ARN, pegue o Skill ID.
-5. **4.4 aqui** — `add-permission` com o Skill ID.
-6. **Account linking** (passo 5.3) e cole as três Redirect URLs de volta no perfil LWA.
+3. **Skill** ([setup-alexa.md](setup-alexa.md), passo 5.1) — aponte para o ARN, pegue o Skill ID.
+4. **4.4 aqui** — `add-permission` com o Skill ID.
+5. **Account linking** (passo 5.3) e cole as três Redirect URLs de volta no perfil LWA.
+6. **Send Alexa Events** (passo 5.3b) — ligue o toggle e copie o **Alexa Client Id/Secret**.
+7. **4.3 aqui** — variáveis de ambiente, agora com as credenciais certas em mãos.
+8. **Habilitar a skill** (passo 5.4) — é o login aqui que dispara o `AcceptGrant`.
+
+O 4.3 fica no fim de propósito: o `LWA_CLIENT_ID`/`LWA_CLIENT_SECRET` que o Lambda precisa só
+existem depois do passo 5.3b, e não são os do perfil criado no 5.2.
 
 ⚠️ O perfil LWA vive na sua **conta de desenvolvedor Amazon**, que não tem relação com a conta
 AWS. Nada dele aparece no `aws` CLI, e nenhuma credencial da AWS serve ali. Use a mesma conta
@@ -98,8 +102,9 @@ Anote o `FunctionArn` da saída — a skill vai apontar para ele.
 
 ## 4.3 Variáveis de ambiente
 
-`LWA_CLIENT_ID` e `LWA_CLIENT_SECRET` só existem depois de criar o perfil Login with Amazon
-(passo 5.2), então volte aqui depois. As demais você já tem:
+`LWA_CLIENT_ID` e `LWA_CLIENT_SECRET` só existem depois de ligar o toggle **Send Alexa Events**
+([setup-alexa.md](setup-alexa.md), passo 5.3b), então faça aquele passo antes deste. As demais
+você já tem:
 
 Use um arquivo JSON, **não** a sintaxe abreviada `Variables={A=B,C=D}`. A abreviada quebra com
 valores que têm espaço (`Suspensão do computador`) e com quebras de linha, e o erro que ela
@@ -120,8 +125,6 @@ $vars = @'
   }
 }
 '@
-
-
 
 # UTF-8 sem BOM, explicitamente. NÃO troque por `Out-File -Encoding utf8`: veja abaixo.
 [System.IO.File]::WriteAllText("$PWD\env.json", $vars, (New-Object System.Text.UTF8Encoding $false))
