@@ -8,14 +8,36 @@ conta está configurada com `sa-east-1` como padrão, então todos os comandos a
 O consumo cabe folgadamente no always-free do Lambda (1M requisições/mês), então o custo
 recorrente é zero.
 
+## A ordem que evita retrabalho
+
+Este passo e o seguinte se entrelaçam: a AWS precisa do Skill ID, e a skill precisa do ARN do
+Lambda. Não dá para fazer linear. Esta sequência minimiza as idas e vindas:
+
+1. **Perfil Login with Amazon** ([setup-alexa.md](setup-alexa.md), passo 5.2) — leva 5 minutos
+   e não depende de nada. Fazendo primeiro, você já tem o `LWA_CLIENT_ID` e o
+   `LWA_CLIENT_SECRET` em mãos.
+2. **4.1 e 4.2 aqui** — papel IAM e criação da função. Guarde o `FunctionArn`.
+3. **4.3 aqui** — variáveis de ambiente, agora completas.
+4. **Skill** ([setup-alexa.md](setup-alexa.md), passo 5.1) — aponte para o ARN, pegue o Skill ID.
+5. **4.4 aqui** — `add-permission` com o Skill ID.
+6. **Account linking** (passo 5.3) e cole as três Redirect URLs de volta no perfil LWA.
+
+⚠️ O perfil LWA vive na sua **conta de desenvolvedor Amazon**, que não tem relação com a conta
+AWS. Nada dele aparece no `aws` CLI, e nenhuma credencial da AWS serve ali. Use a mesma conta
+Amazon em que a Echo está registrada.
+
 ## 4.1 Papel de execução
+
+Os dois arquivos de política são descartáveis, então gere-os em `$env:TEMP` para não sujar o
+repositório:
 
 ```powershell
 $trust = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
-$trust | Out-File -Encoding ascii trust.json
+$trustFile = Join-Path $env:TEMP 'alexawol-trust.json'
+$trust | Out-File -Encoding ascii $trustFile
 
 aws iam create-role --role-name alexawol-lambda-role `
-    --assume-role-policy-document file://trust.json
+    --assume-role-policy-document "file://$trustFile"
 
 aws iam attach-role-policy --role-name alexawol-lambda-role `
     --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -42,10 +64,11 @@ papel precisa de acesso ao parâmetro e à chave KMS padrão do SSM:
     }
   ]
 }
-'@ | Out-File -Encoding ascii ssm-policy.json
+'@ | Out-File -Encoding ascii (Join-Path $env:TEMP 'alexawol-ssm-policy.json')
 
 aws iam put-role-policy --role-name alexawol-lambda-role `
-    --policy-name alexawol-ssm --policy-document file://ssm-policy.json
+    --policy-name alexawol-ssm `
+    --policy-document "file://$(Join-Path $env:TEMP 'alexawol-ssm-policy.json')"
 ```
 
 ## 4.2 Criar a função

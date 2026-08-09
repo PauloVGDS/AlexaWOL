@@ -7,6 +7,10 @@ lambda/.env
 lambda/build/
 lambda/*.zip
 
+# Artefatos temporários do setup da AWS (ver docs/setup-aws.md)
+trust.json
+ssm-policy.json
+
 # Python
 __pycache__/
 *.py[cod]
