@@ -3,3 +3,8 @@ paho-mqtt>=2.1.0
 # não existe mais.
 pycaw>=20251023
 comtypes>=1.4.0
+# SMTC — sessão de mídia do Windows. Dá Play e Pause explícitos (a tecla de mídia é uma
+# alternância só) e a posição da faixa, que é o que faz o "anterior" acertar sempre.
+# Sem estes pacotes o agente continua funcionando, caindo para as teclas de mídia.
+winrt-Windows.Media>=3.0
+winrt-Windows.Media.Control>=3.0

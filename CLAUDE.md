@@ -137,17 +137,18 @@ música entrou, ativá-la teria suspendido o PC. `tests/test_lambda.py` agora co
 verificando que cada cena publica a **sua** ação, e que endpoint desconhecido devolve
 `NO_SUCH_ENDPOINT` em vez de cair num padrão.
 
-**`Previous` dá dois toques na tecla; `StartOver` dá um.** Não é bug nem duplicação: um toque
-em "anterior" rebobina a faixa atual em vez de trocar, na maioria dos players. As duas
-operações da Alexa mapeiam em ações distintas do agente (`media_previous` e `media_restart`)
-justamente por isso. Unificar as duas quebraria uma das intenções.
+**O controle de mídia usa o SMTC, com teclas de mídia só como plano B.** O
+`GlobalSystemMediaTransportControlsSessionManager` é o que permite `Play` e `Pause` corretos —
+o Windows tem uma tecla única que **alterna**, então mapear as duas operações da Alexa nela
+faria "pausar" retomar a música já pausada. Por isso `play()` e `pause()` são SMTC-only e
+levantam erro sem sessão ativa, em vez de cair na tecla e fazer o oposto do pedido.
 
-**`PlaybackController` não declara `Play` nem `Pause`.** Não é omissão: o Windows tem uma única
-tecla de play/pause, que alterna. A Alexa trata `Play` e `Pause` como operações distintas, então
-mapear as duas na mesma tecla faria "pausar" retomar a música já pausada. O handler recusa essas
-operações explicitamente em vez de deixá-las virar um "próxima faixa" silencioso. Suportá-las de
-verdade exige o SMTC do Windows (`GlobalSystemMediaTransportControlsSessionManager`), que também
-habilitaria o `Alexa.PlaybackStateReporter`.
+O SMTC também dá a posição de reprodução, que é o que faz `Previous` acertar: passados 3 s um
+único comando só rebobina, e o agente manda dois. `StartOver` é ação separada de `Previous`
+justamente porque são intenções diferentes — unificar quebraria uma delas.
+
+As chamadas `try_*_async` **devolvem um booleano**. Ignorá-lo faz uma recusa do player passar
+por sucesso e o plano B nunca ser tentado; `_executar_smtc` propaga esse retorno de propósito.
 
 **A mídia da cena de música nunca trafega pela rede.** O comando é só o verbo `play_music`; o
 alvo vem de `[media].target` no `config.toml` do agente. Não mova isso para o payload — quem

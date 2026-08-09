@@ -133,46 +133,61 @@ vale repensar para um parâmetro em vez de um endpoint por faixa.
 **Pausar e continuar** — ver a seção abaixo: exige o SMTC do Windows, ao custo de uma
 dependência WinRT.
 
-## Avançar e voltar faixa
+## Controlar a reprodução
 
-Implementado via `Alexa.PlaybackController` no endpoint principal:
+Via `Alexa.PlaybackController` no endpoint principal:
 
-| Frase | Operação | O agente faz |
-|---|---|---|
-| "Alexa, próxima no computador" | `Next` | um toque em "próxima" |
-| "Alexa, anterior no computador" | `Previous` | **dois** toques em "anterior" |
-| "Alexa, recomeçar no computador" | `StartOver` | **um** toque em "anterior" |
+| Frase | Operação |
+|---|---|
+| "Alexa, continuar no computador" | `Play` |
+| "Alexa, pausar no computador" | `Pause` |
+| "Alexa, próxima no computador" | `Next` |
+| "Alexa, anterior no computador" | `Previous` |
+| "Alexa, recomeçar no computador" | `StartOver` |
 
-O agente emite as teclas de mídia do Windows (`VK_MEDIA_NEXT_TRACK` e `VK_MEDIA_PREV_TRACK`)
-com `keybd_event`. Isso funciona com Spotify, YouTube e VLC de uma vez, porque todos registram
-o atalho global — não há integração com player nenhum.
+### Funciona com qualquer player, não só o Spotify
 
-### Por que "anterior" dá dois toques
+O agente usa o **SMTC** (`GlobalSystemMediaTransportControlsSessionManager`), a API de sessão de
+mídia do Windows — a mesma que alimenta aquele overlay que aparece ao apertar as teclas de
+volume. Não há nada específico de Spotify no código.
 
-Um toque em "anterior" **rebobina a faixa atual** em vez de trocar, comportamento padrão do
-Spotify e da maioria dos players. Quem quer voltar de verdade precisa apertar duas vezes: o
-primeiro toque leva a posição ao início, e o segundo, já no início, troca de faixa.
+Qualquer aplicativo que se integre ao SMTC aparece ali, e a integração é o padrão hoje:
+navegadores tocando YouTube ou Netflix, VLC, Groove, iTunes, Windows Media Player. Se você vê o
+app no overlay de mídia do Windows, o AlexaWOL controla.
 
-Como a Alexa tem operações distintas para as duas intenções, cada uma mapeia no que
-corresponde: `StartOver` dá um toque, `Previous` dá dois, com 300 ms entre eles — curto demais
-e o player junta os dois num só.
+Duas ressalvas honestas:
 
-**Ressalva:** se a faixa começou há poucos segundos, o primeiro toque já troca de faixa e o
-segundo volta mais uma, retrocedendo duas. Corrigir isso exigiria ler a posição de reprodução
-para escolher entre um e dois toques, o que só o SMTC do Windows oferece.
+- **O SMTC controla a sessão *atual***. Com dois players tocando ao mesmo tempo, o comando vai
+  para aquele que o Windows considera ativo — normalmente o último que você usou.
+- **Sem nenhuma mídia aberta não há sessão.** `Play` e `Pause` falham com mensagem clara em vez
+  de fazer algo aleatório.
 
-### Por que não tem "pausar" e "continuar"
+Para o caso raro de um player que registra o atalho global de mídia sem se integrar ao SMTC, o
+agente cai nas teclas de mídia (`keybd_event`). Avançar e voltar continuam funcionando; `Play` e
+`Pause`, não — e é de propósito, pelo motivo abaixo.
 
-O Windows tem **uma única tecla** de play/pause (`VK_MEDIA_PLAY_PAUSE`), que **alterna**. Não
-existem teclas separadas.
+### Por que play/pause exige o SMTC
 
-A Alexa, por outro lado, trata `Play` e `Pause` como operações distintas. Mapear as duas na
-mesma tecla produziria o comportamento errado na cara: dizer "pausar" com a música já pausada
-faria ela **voltar a tocar**. Por isso o `supportedOperations` declara só `Next` e `Previous`
-— e o handler recusa `Play`/`Pause` explicitamente, em vez de deixar virar um "próxima faixa"
-silencioso.
+O Windows tem **uma única tecla** de play/pause (`VK_MEDIA_PLAY_PAUSE`), que **alterna**. A
+Alexa trata `Play` e `Pause` como operações distintas. Mapear as duas na mesma tecla erraria
+metade das vezes: "pausar" com a música já pausada faria ela **voltar a tocar**.
 
-Fazer isso direito exige o **SMTC** do Windows
-(`GlobalSystemMediaTransportControlsSessionManager`), que tem `TryPlayAsync` e `TryPauseAsync`
-explícitos e ainda informa o estado atual — o que permitiria implementar também o
-`Alexa.PlaybackStateReporter`. O custo é uma dependência WinRT e código assíncrono.
+O SMTC tem `try_play_async` e `try_pause_async` explícitos. Verificado nesta máquina:
+
+```
+play()  com a música já tocando  -> continua tocando   (a alternância teria pausado)
+pause() com a música já pausada  -> continua pausada   (a alternância teria retomado)
+```
+
+### Por que "anterior" e "recomeçar" são ações diferentes
+
+Um comando de "anterior" **rebobina a faixa atual** em vez de trocar, se já se passaram alguns
+segundos — regra do Spotify e da maioria dos players. Quem quer voltar de verdade precisa de um
+segundo comando.
+
+O SMTC resolve isso lendo a posição de reprodução: passado o limiar de 3 segundos o agente
+manda dois comandos; antes dele, um só já troca de faixa. Sem o SMTC sobra o toque duplo às
+cegas, que retrocede duas faixas quando a atual acabou de começar.
+
+`StartOver` usa busca explícita para a posição zero quando o player suporta, o que é
+inequívoco.

@@ -20,11 +20,14 @@ log = logging.getLogger()
 
 _ACTION_BY_OPERATION = {
     "Next": "media_next",
-    # Um toque em "anterior" rebobina a faixa em vez de trocar, na maioria dos players. Por
-    # isso as duas operações da Alexa mapeiam em ações diferentes: StartOver dá um toque,
-    # Previous dá dois.
+    # "Anterior" e "recomeçar" são intenções diferentes: na maioria dos players um único
+    # comando de anterior apenas rebobina a faixa atual. O agente resolve a diferença lendo a
+    # posição de reprodução.
     "Previous": "media_previous",
     "StartOver": "media_restart",
+    # Play e Pause exigem o SMTC do Windows — não há tecla de "tocar" separada.
+    "Play": "media_play",
+    "Pause": "media_pause",
 }
 
 

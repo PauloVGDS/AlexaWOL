@@ -139,9 +139,15 @@ consegue mandar o áudio dela para o PC, e como fazer o PC tocar sozinho.
 | "Alexa, colocar o volume do computador em 30" | `Speaker.SetVolume` | Volume absoluto, 0–100 |
 | "Alexa, aumentar o volume do computador em 20" | `Speaker.AdjustVolume` | Ajuste relativo |
 | "Alexa, silenciar o computador" | `Speaker.SetMute` | Mudo |
+| "Alexa, continuar no computador" | `PlaybackController.Play` | Retoma a reprodução |
+| "Alexa, pausar no computador" | `PlaybackController.Pause` | Pausa |
 | "Alexa, próxima no computador" | `PlaybackController.Next` | Avança a faixa |
-| "Alexa, anterior no computador" | `PlaybackController.Previous` | Volta a faixa (dois toques) |
+| "Alexa, anterior no computador" | `PlaybackController.Previous` | Volta uma faixa |
 | "Alexa, recomeçar no computador" | `PlaybackController.StartOver` | Recomeça a faixa atual |
+
+O controle de reprodução usa o **SMTC**, a API de sessão de mídia do Windows — a mesma do
+overlay que aparece ao apertar as teclas de volume. **Não é específico do Spotify**: vale para
+navegador tocando YouTube, VLC, Groove e qualquer app que apareça naquele overlay.
 
 Suspender e tocar música são endpoints separados, expostos como cenas, porque `PowerController`
 só tem dois estados e o "desligar" já ocupa um deles. Para frases mais curtas, crie Rotinas no

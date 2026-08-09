@@ -31,9 +31,11 @@ ACTIONS = frozenset(
         # rede. Se a mídia viesse no payload, quem tivesse o segredo HMAC faria o PC abrir
         # qualquer coisa.
         "play_music",
-        "media_next",  # tecla de mídia "próxima faixa"
-        "media_previous",  # volta de fato — dois toques (ver actions/media.py)
-        "media_restart",  # recomeça a faixa atual — um toque só
+        "media_next",  # próxima faixa
+        "media_previous",  # volta de fato uma faixa (ver actions/media.py)
+        "media_restart",  # recomeça a faixa atual
+        "media_play",  # retoma a reprodução
+        "media_pause",  # pausa a reprodução
     }
 )
 
