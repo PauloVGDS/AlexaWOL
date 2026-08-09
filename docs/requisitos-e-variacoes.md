@@ -10,6 +10,8 @@ caso antes de perder tempo depurando.
 
 | Item | Exigência | Por quê |
 |---|---|---|
+| **BIOS** | **`Power On by PCI-E` ativo, `ErP Ready` desativado** | Sem isso o "ligar" não funciona a partir do desligamento — ver abaixo |
+| Terminal | **PowerShell como Administrador** | Registrar a tarefa e alterar energia do adaptador exigem elevação |
 | Windows | 10 ou 11 | `pycaw`, teclas de mídia e Tarefas Agendadas |
 | Python no PC | **3.11+** | O agente usa `tomllib`, que só existe a partir do 3.11 |
 | Rede do PC | **cabeada** | Wake-on-LAN por Wi-Fi é pouco confiável (ver abaixo) |
@@ -84,15 +86,21 @@ Precisa ser `0`. É a causa mais comum de "acorda quando suspendo, não acorda q
 Desativar: Painel de Controle → Opções de Energia → Escolher a função dos botões → Alterar
 configurações não disponíveis → desmarcar "Ligar inicialização rápida".
 
-### BIOS
+### BIOS — requisito, não diagnóstico
 
-Se o WOL funciona do S3 mas não do S5, é aqui. Procure por:
+**Trate como obrigatório.** As opções do driver controlam o Windows; quem decide se a placa de
+rede continua energizada com a máquina desligada é o firmware, e a configuração de fábrica da
+maioria das placas corta essa energia. Nesta instalação o "ligar" só passou a funcionar depois
+de mexer no BIOS, com tudo já correto do lado do Windows.
 
-- **Power On by PCI-E / PCI** → Enabled
-- **Wake on LAN / Resume by LAN** → Enabled
-- **ErP Ready / EuP** → **Disabled** — corta a energia da placa de rede no S5; é o culpado
-  mais frequente e o nome não menciona rede
+- **Power On by PCI-E / PCI** → Enabled (às vezes *Wake on LAN* ou *Resume by LAN*)
+- **ErP Ready / EuP** → **Disabled** — modo de baixo consumo que corta a alimentação de tudo
+  no S5, inclusive da rede. É o culpado mais frequente e o nome não menciona rede
 - **Deep Sleep / Deep Sx** → Disabled
+
+Suspender (S3) costuma funcionar sem mexer no BIOS, porque a placa continua energizada nesse
+estado. Desligar (S5) é que exige. Se você só precisa de "suspender e acordar", talvez escape —
+mas o caso de uso principal do projeto é o S5.
 
 ### Suspender pode virar hibernar
 
@@ -231,6 +239,9 @@ host, porta, usuário e senha — não há nada específico do HiveMQ no código
 
 ## O que dá para automatizar
 
+**Abra o PowerShell como Administrador** (botão direito no menu Iniciar → Terminal
+(Administrador)) e rode:
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\check_requisitos.ps1
 powershell -ExecutionPolicy Bypass -File tools\setup_local.ps1
@@ -282,7 +293,7 @@ de passos manuais no console: o Skill ID e as credenciais de Alexa Skill Messagi
 | **Execution policy** | Os `.ps1` não são assinados. Use `-ExecutionPolicy Bypass` na chamada, como nos exemplos — evita alterar a política da máquina |
 | **`python` no PATH** | Instale marcando "Add python.exe to PATH". Sem isso os dois scripts param logo no início |
 | **`aws` no PATH** | Só para as verificações de nuvem e para o deploy. Sem ele, o `check` avisa e segue |
-| **Elevação** | Não é necessária para verificar nem para o setup local. É para `install_task.ps1`, que registra a tarefa com `RunLevel Highest` |
+| **Elevação** | **Abra o PowerShell como Administrador para todos os `.ps1`.** Tecnicamente só o `install_task.ps1` exige, mas usar o mesmo terminal elevado do começo ao fim evita a classe de erro em que um passo falha por privilégio e o seguinte parte de um estado incompleto |
 | **PowerShell** | 5.1 serve. Os scripts evitam sintaxe exclusiva do 7 |
 
 Conferir o PATH:

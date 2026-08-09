@@ -67,11 +67,15 @@ Ausência de retained significa "o agente nunca conectou" — ou seja, PC deslig
 ## Requisitos
 
 - Windows 10/11 com **rede cabeada** (Wake-on-LAN por Wi-Fi é pouco confiável)
+- **BIOS com `Power On by PCI-E` ativo e `ErP Ready` desativado** — não é sugestão: a
+  configuração de fábrica da maioria das placas corta a energia da rede no desligamento, e aí
+  nenhum ajuste do Windows faz o "ligar" funcionar
 - **Python 3.11+** no PC (o agente usa `tomllib`)
 - Um dispositivo Echo **na mesma sub-rede** do PC — requisito oficial da Amazon
 - Conta AWS, conta gratuita no HiveMQ, e conta de desenvolvedor Alexa **a mesma da Echo**
 
-Antes de qualquer coisa, o verificador diz o que falta:
+**Rode todos os `.ps1` num PowerShell aberto como Administrador.** Botão direito no menu
+Iniciar → Terminal (Administrador). Antes de qualquer coisa, o verificador diz o que falta:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\check_requisitos.ps1
@@ -94,7 +98,7 @@ mais importa.
 | 4 | [setup-aws.md](docs/setup-aws.md) | Lambda em `us-east-1` |
 | 5 | [setup-alexa.md](docs/setup-alexa.md) | Skill, account linking e `Send Alexa Events` |
 
-O lado local é automatizável:
+O lado local é automatizável — sempre num terminal **como Administrador**:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\setup_local.ps1   # dependências, config, segredo

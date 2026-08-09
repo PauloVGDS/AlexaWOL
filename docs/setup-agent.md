@@ -5,6 +5,11 @@ O serviço que escuta o broker e executa volume, desligar e suspender. Ele **nã
 
 ## Instalar
 
+**Abra o PowerShell como Administrador** — botão direito no menu Iniciar → Terminal
+(Administrador). O registro da tarefa agendada exige elevação, e usar o mesmo terminal do
+começo ao fim evita que um passo falhe por privilégio e o seguinte parta de um estado
+incompleto.
+
 ```powershell
 cd C:\dev\AlexaWOL
 python -m pip install -r agent\requirements.txt

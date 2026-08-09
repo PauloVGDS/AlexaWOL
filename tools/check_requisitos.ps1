@@ -52,8 +52,11 @@ Resultado info 'PowerShell' ("$($PSVersionTable.PSVersion)  " + $(if ($PSVersion
 
 $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
          ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if ($admin) { Resultado ok 'Sessao elevada' 'install_task.ps1 vai conseguir registrar a tarefa' }
-else { Resultado aviso 'Sessao NAO elevada' 'install_task.ps1 usa RunLevel Highest e pode falhar' }
+if ($admin) {
+    Resultado ok 'Sessao elevada' 'todos os .ps1 do projeto vao rodar sem restricao'
+} else {
+    Resultado falha 'Sessao NAO elevada' 'abra o PowerShell como Administrador — install_task.ps1 e as mudancas de energia do adaptador exigem'
+}
 
 # ---------------------------------------------------------------- Python
 Secao 'Python e dependencias'
@@ -225,8 +228,11 @@ if ($tarefa) {
 }
 
 # ---------------------------------------------------------------- Fecho
-Secao 'Nao verificavel por script'
-Write-Host "  BIOS: Power On by PCI-E habilitado, ErP Ready desabilitado" -ForegroundColor DarkGray
+Secao 'Nao verificavel por script — confira manualmente'
+Write-Host "  BIOS  " -ForegroundColor Yellow -NoNewline
+Write-Host "REQUISITO, nao sugestao. 'Power On by PCI-E' habilitado e 'ErP Ready'"
+Write-Host "        DESABILITADO. A configuracao de fabrica da maioria das placas corta a"
+Write-Host "        energia da rede no desligamento, e ai nenhum ajuste do Windows resolve."
 Write-Host "  Roteador: isolamento de clientes desligado" -ForegroundColor DarkGray
 Write-Host "  Alexa: skill na MESMA conta da Echo, toggle Send Alexa Events" -ForegroundColor DarkGray
 Write-Host "  O teste real de WOL exige outro aparelho — veja docs\setup-wol.md" -ForegroundColor DarkGray

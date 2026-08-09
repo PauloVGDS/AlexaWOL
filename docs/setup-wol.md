@@ -30,6 +30,33 @@ powercfg /devicequery wake_armed
 `HiberbootEnabled` precisa ser `0`. O Fast Startup é a causa mais comum de "o WOL funciona
 quando suspendo, mas não quando desligo".
 
+## Antes de testar: o BIOS — **isto é requisito, não sugestão**
+
+Na maioria das placas, **o Windows sozinho não basta**. As opções do driver controlam o
+comportamento do sistema operacional; quem decide se a placa de rede continua energizada com a
+máquina desligada é o firmware. E a configuração de fábrica costuma cortar essa energia.
+
+Nesta instalação o "ligar" só passou a funcionar **depois** de mexer no BIOS, mesmo com tudo
+correto do lado do Windows.
+
+Reinicie, entre no setup e procure:
+
+| Opção | Valor | Observação |
+|---|---|---|
+| **Power On by PCI-E / PCI** | Enabled | Às vezes aparece como *Wake on LAN* ou *Resume by LAN* |
+| **ErP Ready / EuP** | **Disabled** | O culpado mais frequente — e o nome não menciona rede |
+| **Deep Sleep / Deep Sx** | Disabled | Presente sobretudo em placas Intel e notebooks |
+
+O **ErP** merece destaque: é um modo de baixo consumo para conformidade energética que corta a
+alimentação de tudo no S5, inclusive da placa de rede. Habilitado, nenhuma configuração do
+Windows faz o WOL funcionar a partir do desligamento.
+
+Os nomes variam bastante por fabricante. Se não achar nada parecido, procure o manual da sua
+placa-mãe por "Wake on LAN".
+
+Se você quiser adiar isso: suspender (S3) geralmente funciona **sem** mexer no BIOS, porque a
+placa continua energizada nesse estado. Desligar (S5) é que exige.
+
 ## Como enviar o magic packet
 
 O pacote precisa sair de **outro dispositivo da mesma rede** — o PC alvo obviamente não pode
@@ -67,14 +94,8 @@ Desligue o PC normalmente e repita. Este é o caso que depende do BIOS.
 
 ## Se o S3 funciona mas o S5 não
 
-É o BIOS. Reinicie e entre no setup procurando por:
-
-- **Power On by PCI-E / PCI** → Enabled
-- **Wake on LAN / Resume by LAN** → Enabled
-- **ErP Ready / EuP** → **Disabled** (quando ligado, corta a energia da placa de rede no S5)
-- **Deep Sleep / Deep Sx** → Disabled
-
-O `ErP Ready` é o culpado mais frequente e o menos óbvio, porque o nome não menciona rede.
+É o BIOS — volte à seção do começo deste documento. Esse é exatamente o sintoma de placa de
+rede sem energia no desligamento, e quase sempre se resolve desabilitando o **ErP Ready**.
 
 ## Se nem o S3 funciona
 
