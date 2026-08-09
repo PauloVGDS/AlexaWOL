@@ -91,8 +91,13 @@ aws logs tail /aws/lambda/alexawol --follow --region us-east-1
 Se nenhuma invocação aparece, o problema é a permissão. Se aparece e a resposta tem erro, o
 problema é o código.
 
-**O PC não liga, mas o resto funciona** — o caminho do "ligar" é totalmente distinto dos
-demais: ele não passa pelo MQTT nem pelo agente. Verifique, nesta ordem:
+**O PC não liga, mas o resto funciona** — essa combinação exata é informativa, não coincidência.
+As credenciais LWA são usadas em um único caminho do código: `get_access_token()` só é chamado
+por `send_wake_up()`, que só é usado pelo `TurnOn`. Volume, desligar, suspender, música,
+discovery e ReportState nunca tocam nesse módulo.
+
+Então, se **tudo funciona menos ligar**, suspeite primeiro do `LWA_CLIENT_ID` / `LWA_CLIENT_SECRET`
+nas variáveis de ambiente do Lambda, ou do account linking. Verifique nesta ordem:
 
 1. `tools/wol_test.py` ainda acorda o PC? Se não, é hardware/BIOS, veja
    [setup-wol.md](setup-wol.md).
@@ -100,7 +105,8 @@ demais: ele não passa pelo MQTT nem pelo agente. Verifique, nesta ordem:
    `192.168.1.11` e o PC em `192.168.1.10` — mesma `/24`, correto.
 3. O refresh token está no SSM (comando do passo 5.4)? Sem ele o evento `WakeUp` não é
    autorizado. Se estiver faltando, desative e reative a skill no app para refazer o
-   `AcceptGrant`.
+   `AcceptGrant` — e olhe o log, porque `handle_accept_grant` devolve o motivo como
+   `ACCEPT_GRANT_FAILED`.
 4. O log mostra `event gateway respondeu 202`? Qualquer coisa diferente disso indica token
    inválido ou endpoint errado.
 
