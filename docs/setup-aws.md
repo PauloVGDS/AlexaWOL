@@ -101,26 +101,53 @@ Anote o `FunctionArn` da saída — a skill vai apontar para ele.
 `LWA_CLIENT_ID` e `LWA_CLIENT_SECRET` só existem depois de criar o perfil Login with Amazon
 (passo 5.2), então volte aqui depois. As demais você já tem:
 
+Use um arquivo JSON, **não** a sintaxe abreviada `Variables={A=B,C=D}`. A abreviada quebra com
+valores que têm espaço (`Suspensão do computador`) e com quebras de linha, e o erro que ela
+produz não deixa claro qual variável causou o problema.
+
 ```powershell
+@'
+{
+  "Variables": {
+    "PC_MAC": "00-11-22-33-44-55",
+    "FRIENDLY_NAME": "Computador",
+    "SUSPEND_FRIENDLY_NAME": "Suspensão do computador",
+    "MUSIC_FRIENDLY_NAME": "Música do computador",
+    "MQTT_HOST": "SEU-CLUSTER.s1.eu.hivemq.cloud",
+    "MQTT_PORT": "8883",
+    "MQTT_USERNAME": "alexawol-lambda",
+    "MQTT_PASSWORD": "SENHA-DO-LAMBDA",
+    "HMAC_SECRET": "SEU-SEGREDO-HMAC",
+    "LWA_CLIENT_ID": "amzn1.application-oa2-client.xxxx",
+    "LWA_CLIENT_SECRET": "amzn1.oa2-cs.v1.xxxx"
+  }
+}
+'@ | Out-File -Encoding utf8 env.json
+
 aws lambda update-function-configuration `
     --function-name alexawol --region us-east-1 `
-    --environment 'Variables={
-        PC_MAC=00-11-22-33-44-55,
-        FRIENDLY_NAME=Computador,
-        SUSPEND_FRIENDLY_NAME=Suspensão do computador,
-        MUSIC_FRIENDLY_NAME=Música do computador,
-        MQTT_HOST=SEU-CLUSTER.s1.eu.hivemq.cloud,
-        MQTT_PORT=8883,
-        MQTT_USERNAME=alexawol-lambda,
-        MQTT_PASSWORD=SENHA-DO-LAMBDA,
-        HMAC_SECRET=SEU-SEGREDO-HMAC,
-        LWA_CLIENT_ID=amzn1.application-oa2-client.xxxx,
-        LWA_CLIENT_SECRET=xxxx
-    }'
+    --environment file://env.json
+
+Remove-Item env.json   # contém segredos; não deixe na pasta
 ```
+
+O `-Encoding utf8` importa por causa dos acentos em "Suspensão" e "Música".
+
+**Cole os valores do LWA por inteiro.** O `LWA_CLIENT_SECRET` vem no formato
+`amzn1.oa2-cs.v1.` seguido de uma string hexadecimal — o prefixo faz parte do segredo, não é
+rótulo. O mesmo vale para o `LWA_CLIENT_ID`, que é todo o `amzn1.application-oa2-client.xxxx`.
+Cortar o prefixo produz uma falha só no "ligar", que é o único caminho que usa essas
+credenciais.
 
 O `HMAC_SECRET` precisa ser **idêntico** ao do `agent/config.toml`, e o `MQTT_USERNAME` aqui é
 o `alexawol-lambda` (publicar em `cmd`, assinar em `state`) — não o do agente.
+
+Conferir depois, sem expor os valores:
+
+```powershell
+aws lambda get-function-configuration --function-name alexawol --region us-east-1 `
+    --query 'Environment.Variables | keys(@)'
+```
 
 ## 4.4 Autorizar a Alexa a invocar
 

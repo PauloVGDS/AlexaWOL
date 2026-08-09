@@ -10,6 +10,9 @@ lambda/*.zip
 # Artefatos temporários do setup da AWS (ver docs/setup-aws.md)
 trust.json
 ssm-policy.json
+# env.json carrega as senhas do broker e o segredo LWA — o doc manda apagá-lo depois,
+# mas ignorar aqui garante que um esquecimento não vire commit.
+env.json
 
 # Python
 __pycache__/
