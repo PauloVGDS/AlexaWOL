@@ -8,11 +8,27 @@ O serviço que escuta o broker e executa volume, desligar e suspender. Ele **nã
 ```powershell
 cd C:\dev\AlexaWOL
 python -m pip install -r agent\requirements.txt
-Copy-Item agent\config.example.toml agent\config.toml
+
+# O config NÃO fica na árvore do projeto — veja o porquê logo abaixo
+New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\AlexaWOL" | Out-Null
+Copy-Item agent\config.example.toml "$env:LOCALAPPDATA\AlexaWOL\config.toml"
 ```
 
-Edite `agent\config.toml` com o hostname do HiveMQ, as credenciais do usuário
-**`alexawol-agent`** e o segredo HMAC. O arquivo está no `.gitignore`.
+Edite `%LOCALAPPDATA%\AlexaWOL\config.toml` com o hostname do HiveMQ, as credenciais do
+usuário **`alexawol-agent`** e o segredo HMAC.
+
+### Por que fora do projeto
+
+O `.gitignore` impede que esse arquivo vá para o repositório, mas **não impede que ele saia da
+máquina**. Este projeto vive dentro do `C:\Users\<voce>\OneDrive\...`, e tudo ali é sincronizado
+para a nuvem da Microsoft e para todos os dispositivos logados na conta. Um `config.toml` em
+`agent\` levaria junto as duas credenciais MQTT e o segredo HMAC — ou seja, controle total da
+máquina, fora dela.
+
+`%LOCALAPPDATA%` não é sincronizado por OneDrive, Dropbox nem Google Drive. O agente procura o
+config nesta ordem: argumento de linha de comando, variável `ALEXAWOL_CONFIG`,
+`%LOCALAPPDATA%\AlexaWOL\config.toml` e, por último, `agent\config.toml`. Se o que ele carregar
+estiver numa pasta sincronizada, ele avisa no log — o mesmo vale para o `send_cmd.py`.
 
 A seção `[media]` é opcional — só é usada pela cena "Música do computador". Se você não for
 usá-la, deixe `target = ""`; o comando simplesmente falha com mensagem clara no log, sem
@@ -85,21 +101,16 @@ Get-WinEvent -LogName System -MaxEvents 20 |
 
 O evento 42 é a entrada em suspensão e o 107 é a saída.
 
-## Ao terminar os testes: esvazie o `[publisher]`
+## Sobre manter o `[publisher]` preenchido
 
-```toml
-[publisher]
-username = ""
-password = ""
-```
+Ele concentra as duas credenciais MQTT no mesmo arquivo, junto do segredo HMAC. É consciente:
+sem ele o `send_cmd.py` não publica, e a alternativa seria afrouxar a ACL do agente de forma
+permanente — o que quebraria a separação entre quem emite comandos e quem os executa. Um
+arquivo protegido é melhor que uma ACL errada.
 
-Enquanto ela está preenchida, o `config.toml` guarda **as duas** credenciais — inclusive a que
-publica comandos, justamente a que o desenho quer manter longe do PC. Junte a isso o segredo
-HMAC, que também mora nesse arquivo, e um `config.toml` vazado dá controle total da máquina.
-
-O agente ignora a seção, então esvaziá-la não afeta a operação. A partir da camada 3 quem
-publica é o Lambda de verdade, com a credencial nas variáveis de ambiente dele. Rotacionar a
-senha do `alexawol-lambda` nesse momento fecha o ciclo.
+O que sustenta essa escolha é o arquivo **não sair da máquina**, e é exatamente por isso que a
+seção acima insiste no `%LOCALAPPDATA%`. Dentro do OneDrive, a premissa se quebra e a decisão
+deixa de ser defensável.
 
 ## Instalar como Tarefa Agendada
 

@@ -25,6 +25,7 @@ import paho.mqtt.client as mqtt
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from shared.protocol import Rejected, prune_nonces, verify_command  # noqa: E402
 
+import config_location  # noqa: E402
 from actions import media, power, volume  # noqa: E402
 
 log = logging.getLogger("alexawol")
@@ -182,7 +183,8 @@ def load_config(path: Path) -> dict:
     if not path.exists():
         raise SystemExit(
             f"config não encontrado: {path}\n"
-            "Copie config.example.toml para config.toml e preencha as credenciais."
+            f"Copie agent/config.example.toml para lá e preencha as credenciais.\n"
+            f"Local recomendado: {config_location.default_path()}"
         )
     with path.open("rb") as fh:
         return tomllib.load(fh)
@@ -193,8 +195,15 @@ def main() -> None:
         level=logging.INFO,
         format="%(asctime)s %(levelname)-7s %(message)s",
     )
-    here = Path(__file__).resolve().parent
-    config_path = Path(sys.argv[1]) if len(sys.argv) > 1 else here / "config.toml"
+    config_path = config_location.resolve(sys.argv[1] if len(sys.argv) > 1 else None)
+
+    # O arquivo guarda as duas credenciais e o segredo HMAC. Numa pasta sincronizada ele sai
+    # da máquina sozinho, o que anula a proteção — avisa alto, mas não impede de rodar.
+    synced = config_location.warning_if_synced(config_path)
+    if synced:
+        log.warning(synced)
+
+    log.info("config: %s", config_path)
     Agent(load_config(config_path)).run()
 
 

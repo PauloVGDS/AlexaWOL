@@ -25,7 +25,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $agentDir = $PSScriptRoot
 $script   = Join-Path $agentDir 'alexawol_agent.py'
-$config   = Join-Path $agentDir 'config.toml'
+# Fora da arvore do projeto de proposito: se o projeto estiver em OneDrive/Dropbox, um
+# config.toml ali dentro seria sincronizado para a nuvem com as credenciais e o segredo HMAC.
+$config   = Join-Path $env:LOCALAPPDATA 'AlexaWOL\config.toml'
+$legacy   = Join-Path $agentDir 'config.toml'
 
 if ($Uninstall) {
     if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
@@ -37,8 +40,21 @@ if ($Uninstall) {
     return
 }
 
-if (-not (Test-Path $script))  { throw "Não encontrei o agente em $script" }
-if (-not (Test-Path $config))  { throw "Falta o config.toml em $agentDir. Copie config.example.toml e preencha." }
+if (-not (Test-Path $script)) { throw "Não encontrei o agente em $script" }
+
+if (-not (Test-Path $config)) {
+    if (Test-Path $legacy) {
+        throw @"
+O config.toml está em $legacy, dentro da árvore do projeto.
+Se o projeto estiver em OneDrive/Dropbox, esse arquivo — que guarda as duas credenciais MQTT
+e o segredo HMAC — está sendo sincronizado para a nuvem. Mova para fora:
+
+    New-Item -ItemType Directory -Force (Split-Path '$config') | Out-Null
+    Move-Item '$legacy' '$config'
+"@
+    }
+    throw "Falta o config.toml em $config. Copie agent\config.example.toml para lá e preencha."
+}
 
 # pythonw.exe roda sem console. Derivamos do python do PATH para respeitar venv.
 $pythonExe = (Get-Command python -ErrorAction SilentlyContinue).Source

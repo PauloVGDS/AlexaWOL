@@ -29,14 +29,24 @@ from pathlib import Path
 
 import paho.mqtt.client as mqtt
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / "agent"))
+import config_location  # noqa: E402
+
 from shared.protocol import build_command, sign  # noqa: E402
 
 
 def load_config() -> dict:
-    path = Path(__file__).resolve().parents[1] / "agent" / "config.toml"
+    path = config_location.resolve()
     if not path.exists():
-        raise SystemExit(f"config não encontrado: {path}")
+        raise SystemExit(
+            f"config não encontrado: {path}\n"
+            f"Local recomendado: {config_location.default_path()}"
+        )
+    synced = config_location.warning_if_synced(path)
+    if synced:
+        print(synced, file=sys.stderr)
     with path.open("rb") as fh:
         return tomllib.load(fh)
 

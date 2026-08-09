@@ -136,9 +136,11 @@ credenciais MQTT são duas e diferentes: `alexawol-lambda` (publica em `cmd`, as
 
 ### Credenciais: centralizadas em um arquivo, nunca no repositório
 
-**Decisão:** todos os segredos do lado do PC ficam num único arquivo, `agent/config.toml` —
-credencial do agente, credencial do publisher, segredo HMAC e o alvo de mídia. Não são
-espalhados por variáveis de ambiente, arquivos `.env` separados ou cofre externo.
+**Decisão:** todos os segredos do lado do PC ficam num único arquivo, em
+`%LOCALAPPDATA%\AlexaWOL\config.toml` — credencial do agente, credencial do publisher, segredo
+HMAC e o alvo de mídia. Não são espalhados por variáveis de ambiente, arquivos `.env` separados
+ou cofre externo. Note que o local é **fora** do repositório; o motivo está no último item das
+consequências.
 
 O motivo é operacional: um arquivo só significa um lugar para editar ao rotacionar uma senha,
 um lugar para conferir quando algo para de autenticar, e uma única entrada no `.gitignore`
@@ -159,6 +161,14 @@ para proteger. Segredo espalhado é segredo que vaza pela cópia esquecida.
 - Como consequência do ponto acima, quem obtém o `config.toml` obtém tudo: as duas credenciais
   MQTT e o segredo HMAC. É o modelo de ameaça aceito — a proteção é o arquivo não sair da
   máquina, não a compartimentação interna dele.
+- **E é por isso que ele não mora na árvore do projeto.** O local é
+  `%LOCALAPPDATA%\AlexaWOL\config.toml`, resolvido por `agent/config_location.py`. O
+  `.gitignore` protege o repositório git e **não protege contra sincronização**: com o projeto
+  dentro de OneDrive, Dropbox ou Google Drive, um `config.toml` ali seria enviado à nuvem do
+  serviço e a todo dispositivo da conta — exatamente o "sair da máquina" que o modelo proíbe.
+  Isso não é hipotético: este projeto vive em `C:\Users\<voce>\OneDrive\...`, e o arquivo esteve
+  sincronizado até ser movido. O agente e o `send_cmd.py` avisam alto se o config que
+  carregarem estiver numa pasta sincronizada.
 - O lado do Lambda espelha isso em variáveis de ambiente da função, criptografadas em repouso.
   A única exceção é o refresh token do account linking, que fica no SSM Parameter Store como
   SecureString por ser escrito em tempo de execução, quando chega o `AcceptGrant`.
