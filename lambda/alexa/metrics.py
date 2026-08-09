@@ -11,28 +11,42 @@ seja, o app mostra o valor mas não deixa alterar, que é o que queremos. Como e
 
 from __future__ import annotations
 
+# A ORDEM AQUI É A ORDEM NO APP: o card renderiza os controles na sequência em que eles
+# aparecem no Discovery. Não existe cabeçalho de seção no Smart Home API, então o agrupamento
+# é feito por vizinhança e por prefixo no nome — "Uso atual do..." mantém processador e placa
+# de vídeo lendo como um bloco só.
+#
 # `campo` é a chave publicada pelo agente na mensagem retida de estado.
 METRICAS = (
-    {
-        "instance": "PC.Uptime",
-        "campo": "uptime_min",
-        "nomes": {"pt-BR": "Tempo ligado em minutos", "en-US": "Uptime in minutes"},
-        "minimo": 0,
-        "maximo": 43200,  # 30 dias
-    },
+    # -- desempenho
     {
         "instance": "PC.CPU",
         "campo": "cpu_pct",
-        "nomes": {"pt-BR": "Uso do processador", "en-US": "CPU usage"},
+        "nomes": {"pt-BR": "Uso atual do processador", "en-US": "Current CPU usage"},
         "minimo": 0,
         "maximo": 100,
     },
     {
         "instance": "PC.GPU",
         "campo": "gpu_pct",
-        "nomes": {"pt-BR": "Uso da placa de vídeo", "en-US": "GPU usage"},
+        "nomes": {"pt-BR": "Uso atual da placa de vídeo", "en-US": "Current GPU usage"},
         "minimo": 0,
         "maximo": 100,
+    },
+    # -- armazenamento
+    {
+        "instance": "PC.DiscoUsado",
+        "campo": "disco_usado_gb",
+        "nomes": {"pt-BR": "Disco usado em gigabytes", "en-US": "Disk used in gigabytes"},
+        "minimo": 0,
+        "maximo": 65536,
+    },
+    {
+        "instance": "PC.DiscoTotal",
+        "campo": "disco_total_gb",
+        "nomes": {"pt-BR": "Disco total em gigabytes", "en-US": "Total disk in gigabytes"},
+        "minimo": 0,
+        "maximo": 65536,
     },
     {
         "instance": "PC.RAMUsada",
@@ -48,19 +62,13 @@ METRICAS = (
         "minimo": 0,
         "maximo": 1024,
     },
+    # -- por último, o que muda devagar
     {
-        "instance": "PC.DiscoUsado",
-        "campo": "disco_usado_gb",
-        "nomes": {"pt-BR": "Disco usado em gigabytes", "en-US": "Disk used in gigabytes"},
+        "instance": "PC.Uptime",
+        "campo": "uptime_min",
+        "nomes": {"pt-BR": "Tempo ligado em minutos", "en-US": "Uptime in minutes"},
         "minimo": 0,
-        "maximo": 65536,
-    },
-    {
-        "instance": "PC.DiscoTotal",
-        "campo": "disco_total_gb",
-        "nomes": {"pt-BR": "Disco total em gigabytes", "en-US": "Total disk in gigabytes"},
-        "minimo": 0,
-        "maximo": 65536,
+        "maximo": 43200,  # 30 dias
     },
 )
 

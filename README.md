@@ -170,11 +170,19 @@ perguntá-las por voz, tipo *"Alexa, qual é o uso do processador do computador?
 
 | Métrica | Fonte |
 |---|---|
-| Tempo ligado em minutos | `psutil.boot_time()` |
-| Uso do processador | psutil |
-| Uso da placa de vídeo | contador de desempenho do Windows — **qualquer fabricante** |
-| Memória usada / total em gigabytes | psutil |
+| Uso atual do processador | psutil |
+| Uso atual da placa de vídeo | contador de desempenho do Windows — **qualquer fabricante** |
 | Disco usado / total em gigabytes | psutil |
+| Memória usada / total em gigabytes | psutil |
+| Tempo ligado em minutos | `psutil.boot_time()` |
+
+A ordem da tabela é a ordem no card: **a sequência do Discovery é respeitada pelo app.**
+Desempenho primeiro, armazenamento depois, e por último o que muda devagar.
+
+Não existe cabeçalho de seção no Smart Home API — o app renderiza um controle por capability e
+o nome amigável *é* o rótulo. O agrupamento é feito por vizinhança e por prefixo comum no nome
+("Uso atual do…"), que é o mais perto que dá para chegar sem quebrar o card em vários
+dispositivos.
 
 São instâncias de `Alexa.RangeController` com `nonControllable: true`, o que faz o app exibir o
 valor sem oferecer controle. Com o PC desligado nenhuma métrica é reportada — mostrar zero
