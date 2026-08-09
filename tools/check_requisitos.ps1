@@ -73,7 +73,14 @@ if (-not $py) {
         Resultado falha "Python $ver e antigo demais" 'o agente usa tomllib, que exige 3.11+'
     }
 
-    $pkgs = @{ 'paho.mqtt' = 'paho-mqtt'; 'comtypes' = 'comtypes'; 'pycaw' = 'pycaw' }
+    # Obrigatorios: sem qualquer um deles o agente nem inicia — e como roda por pythonw, sem
+    # console, a falha e invisivel. E por isso que este check existe.
+    $pkgs = @{
+        'paho.mqtt' = 'paho-mqtt'
+        'comtypes'  = 'comtypes'
+        'pycaw'     = 'pycaw'
+        'psutil'    = 'psutil'
+    }
     foreach ($mod in $pkgs.Keys) {
         & python -c "import $mod" 2>$null
         if ($LASTEXITCODE -eq 0) { Resultado ok "modulo $($pkgs[$mod])" }
