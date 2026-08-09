@@ -174,8 +174,8 @@ para proteger. Segredo espalhado é segredo que vaza pela cópia esquecida.
   `.gitignore` protege o repositório git e **não protege contra sincronização**: com o projeto
   dentro de OneDrive, Dropbox ou Google Drive, um `config.toml` ali seria enviado à nuvem do
   serviço e a todo dispositivo da conta — exatamente o "sair da máquina" que o modelo proíbe.
-  Isso não é hipotético: este projeto vive em `C:\Users\<voce>\OneDrive\...`, e o arquivo esteve
-  sincronizado até ser movido. O agente e o `send_cmd.py` avisam alto se o config que
+  Isso não é hipotético: na instalação original o repositório vivia dentro do OneDrive e o
+  arquivo esteve sincronizado até ser movido. O agente e o `send_cmd.py` avisam alto se o config que
   carregarem estiver numa pasta sincronizada.
 - O lado do Lambda espelha isso em variáveis de ambiente da função, criptografadas em repouso.
   A única exceção é o refresh token do account linking, que fica no SSM Parameter Store como
@@ -183,14 +183,22 @@ para proteger. Segredo espalhado é segredo que vaza pela cópia esquecida.
 
 ## Ambiente alvo
 
-Valores concretos desta instalação, referenciados pelos docs e pelos testes:
+Os docs e os testes usam valores de exemplo. **Troque pelos seus** — os identificadores reais
+não vão para o repositório, e o `agent/config.toml` mora fora da árvore do projeto.
 
-| Item | Valor |
-|---|---|
-| MAC do PC (alvo do WOL) | `00-11-22-33-44-55` |
-| PC | `192.168.1.10/24`, `Ethernet 3` (Realtek, cabeada) |
-| Echo Show | `192.168.1.11` — mesma sub-rede, requisito oficial |
-| Conta AWS | `123456789012`, região obrigatória `us-east-1` |
+| Item | Exemplo nos docs | Onde está o seu |
+|---|---|---|
+| MAC do PC (alvo do WOL) | `00-11-22-33-44-55` | variável `PC_MAC` do Lambda |
+| PC | `192.168.1.10/24`, interface cabeada | `ipconfig` |
+| Echo | `192.168.1.11` — mesma sub-rede, requisito oficial | app Alexa → dispositivo → sobre |
+| Conta AWS | `123456789012`, região obrigatória `us-east-1` | `aws sts get-caller-identity` |
+| Skill ID | `amzn1.ask.skill.a1b2c3d4-…` | console da skill, "View Skill ID" |
+
+Para descobrir o MAC e a interface no Windows:
+
+```powershell
+Get-NetAdapter | Where-Object Status -eq 'Up' | Select-Object Name, MacAddress, LinkSpeed
+```
 
 ## Estado atual
 

@@ -20,10 +20,13 @@ usuário **`alexawol-agent`** e o segredo HMAC.
 ### Por que fora do projeto
 
 O `.gitignore` impede que esse arquivo vá para o repositório, mas **não impede que ele saia da
-máquina**. Este projeto vive dentro do `C:\Users\<voce>\OneDrive\...`, e tudo ali é sincronizado
-para a nuvem da Microsoft e para todos os dispositivos logados na conta. Um `config.toml` em
-`agent\` levaria junto as duas credenciais MQTT e o segredo HMAC — ou seja, controle total da
-máquina, fora dela.
+máquina**. Se você clonar este projeto dentro de uma pasta do OneDrive, Dropbox ou Google Drive
+— comum, já que `Documentos` costuma ser sincronizado — tudo ali é enviado para a nuvem do
+serviço e para todos os dispositivos logados na conta. Um `config.toml` em `agent\` levaria
+junto as duas credenciais MQTT e o segredo HMAC, ou seja, controle total da máquina, fora dela.
+
+Aconteceu na instalação original deste projeto: o repositório vivia dentro do OneDrive e o
+arquivo esteve sincronizado até ser movido.
 
 `%LOCALAPPDATA%` não é sincronizado por OneDrive, Dropbox nem Google Drive. O agente procura o
 config nesta ordem: argumento de linha de comando, variável `ALEXAWOL_CONFIG`,
