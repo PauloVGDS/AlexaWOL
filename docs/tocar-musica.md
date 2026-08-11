@@ -100,6 +100,63 @@ Se um dia você quiser chamar por voz, renomeie a cena pela variável `MUSIC_FRI
 Lambda, evitando "música", "som", "tocar", "playlist" e "rádio" — todas disputam com intents
 nativos. Algo como "Trilha do computador" funciona.
 
+## Ver a faixa na tela da Echo, sem perder o áudio do PC
+
+Nada disto usa a skill — é configuração de áudio do Windows. Está aqui porque é a única forma
+de conseguir o efeito, e não achei descrito em lugar nenhum.
+
+**O problema:** a Echo Show mostra "tocando agora" quando é o destino Bluetooth do áudio, porque
+os metadados viajam pelo AVRCP, que só opera junto do fluxo A2DP. Mandar o som para a Echo
+resolve a tela e estraga o áudio, se você tem uma saída melhor.
+
+**A solução é duplicar:** a saída boa continua sendo a padrão, e a Echo recebe uma cópia
+silenciada, só para manter o vínculo vivo.
+
+1. Painel de Som → aba **Gravação** → botão direito → **Mostrar dispositivos desativados**
+2. Habilite **Mixagem Estéreo** (o Realtek costuma apenas ocultá-la, não removê-la)
+3. Propriedades → aba **Ouvir** → *Ouvir este dispositivo* → escolha a Echo
+4. No mixer de volume do Windows, **zere o volume da Echo**
+
+O passo 4 não é opcional: sem ele você ouve tudo duas vezes, com o atraso do Bluetooth.
+
+A Mixagem Estéreo captura todo o áudio do sistema, inclusive notificações e jogo — irrelevante,
+já que a Echo está muda. E os metadados **não** vêm dela: o Windows os publica a partir da
+sessão de mídia do sistema, a mesma que o agente lê. Por isso a tela mostra a faixa do player,
+não o que estiver saindo no momento.
+
+### Não troque a saída boa por Bluetooth
+
+Se a sua caixa de som também aceita Bluetooth, pode ser tentador simplificar. Seria pior, por
+três motivos:
+
+- **S/PDIF e HDMI são digitais sem perda.** O A2DP do Bluetooth é sempre comprimido com perda,
+  qualquer que seja o codec.
+- **O Windows mantém um único destino A2DP por vez.** Com a caixa ocupando a vaga, a Echo não
+  conecta — e você perde os metadados, que eram o objetivo.
+- Bluetooth acrescenta latência perceptível em vídeo e jogo.
+
+Ou seja, manter a saída boa por cabo e deixar a vaga Bluetooth para a Echo não é um meio-termo:
+é o melhor arranjo disponível.
+
+### A capa da música não aparece, e não há o que fazer
+
+Título, artista e álbum viajam no AVRCP básico. **A capa exige AVRCP 1.6 com BIP sobre OBEX**,
+um canal separado de transferência de imagem.
+
+Verificável no seu próprio par de dispositivos, olhando os serviços negociados:
+
+```powershell
+Get-PnpDevice -Class Bluetooth | Where-Object FriendlyName -match 'Echo' |
+    Select-Object FriendlyName, InstanceId
+```
+
+Aparecendo apenas `0000110C` (AVRCP Target) e `0000110E` (AVRCP Controller), sem nenhum
+`0000111A`/`111B`/`111C`, não há serviço de imagem — a capa não tem por onde ser transmitida. O
+recurso existe na especificação desde 2015 e continua raramente implementado, inclusive em
+Android e iOS.
+
+Pela skill também não: o Smart Home API não tem nenhuma interface de metadados de reprodução.
+
 ## Montar a rotina
 
 1. App Alexa → **Mais → Rotinas** → abra a rotina que você já tem
